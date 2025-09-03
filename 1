@@ -1,0 +1,1904 @@
+local remote = game.ReplicatedStorage.PlayerChannel
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Char = LocalPlayer.Character
+local root = Char:FindFirstChild("HumanoidRootPart")
+
+local doCaixa, doCozinha,  doEmpacotador, doFornecedor, doEntregador = false, false, false, false, false
+local Folder
+local TeleportV = true
+local Teleport_LentoV = false
+local AndarV = false
+local antd
+local idled
+local CF
+local PaycheckV = true
+local Anti_LagV = false
+local AfkV = true
+local InvisibilidadeV = false
+local InvBool = true
+local CamV = 0
+local withoutFloor = false
+local refill_at, refill_end
+
+--cozinha
+local bool1 = true
+local doCook = true
+local oldp
+local tabledew = {}
+local ishere = false
+local CookingPizzas = {}
+
+local network = require(game.ReplicatedStorage.LibraryFolder.Network)
+local Floors = {}
+local Moneyz = game.Players.LocalPlayer.Moneyz.Value
+
+idled = game:GetService("Players").LocalPlayer.Idled:connect(function()
+    if AfkV then
+        game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+    end
+end)
+
+-- -- require(game.ReplicatedStorage.LibraryFolder.Network)
+-- local network = {}
+
+-- local RemoteEvents = {
+--     "TeleportToServerInstance",
+--     "TeleportToRandomServerInstance",
+--     "HideFriendJoiner",
+--     "ShowFriendJoiner",
+--     "OpenDrawer",
+--     "OrderComplete",
+--     "SquishDough",
+--     "AddIngredientToPizza",
+--     "CloseBox",
+--     "SlicePizza",
+--     "OpenBox",
+--     "SliceObject",
+--     "AssignPizzaToBox",
+--     "AddPizzaToBackpack",
+--     "UpdateProperty",
+--     "RevealPetTrait",
+--     "UpdatePetDaycareStates",
+--     "ShowHidePet",
+--     "EmotePlayed",
+--     "AnimateArrows",
+--     "AllPurchasedGamepasses",
+--     "RefreshDeathMeter",
+--     "PlayerRespawned",
+--     "SleepingEnded",
+--     "ItemHiddenLocally",
+--     "DisplayJoinableFriendsList",
+--     "JoinableFriendsSearchComplete",
+--     "JoinableFriendFound",
+--     "BecameManager",
+--     "LostManagerJob",
+--     "StayingEnded",
+--     "HoldingEnded",
+--     "AddXPAnimation",
+--     "HouseLoaded",
+--     "SetPetShopItemPrice",
+--     "ShowVIPIcon",
+--     "StartDoubleTimeCountdown",
+--     "PettingEnded",
+--     "StarRatingChanged",
+--     "EatingEnded",
+--     "ChestOpened",
+--     "PlayButtonPressed",
+--     "LoginStreakClaimed",
+--     "Morph",
+--     "RemoveSeatWeld",
+--     "FirePlayer"
+
+-- }
+
+-- -- for i,v in pairs(game:GetService("ReplicatedStorage").Communication.Events:GetChildren()) do
+-- --     if RemoteEvents[i] then
+-- --         v.Name = RemoteEvents[i]
+-- --         table.insert(network, v)
+-- --     end
+-- -- end
+
+-- --table.insert(network, workspace.Main.Chatted)
+
+-- function network:FireServer(name, ...)
+--     local r = table.find(RemoteEvents, name)
+-- 	--print(r)
+--     if r then
+--         game:GetService("ReplicatedStorage").Communication.Events:GetChildren()[r]:FireServer(...)
+--     end
+-- end
+
+
+if not workspace:FindFirstChild("CDough") then
+    Folder = Instance.new("Folder", workspace)
+    Folder.Name = "CDough"
+else
+    Folder = workspace:FindFirstChild("CDough")
+end
+
+function getpizza()
+    local c = game.Players.LocalPlayer.Backpack:GetChildren()
+    local i = 0
+    while i <= #c  do 
+        i += 1
+        if c[i] and c[i].ClassName == "Tool" and c[i]:FindFirstChild("House") then
+            return c[i]
+        end
+    end 
+end
+
+function GetDough() --Pega uma Massa Limpa
+    for _, Massa in pairs(workspace.AllDough:GetChildren()) do
+        if not ( Massa.SG.Frame:FindFirstChild("Fly") or Massa.SG.Frame:FindFirstChild("Ant") or Massa.SG.Frame:FindFirstChild("Roach") ) then
+			Massa.Parent = Folder
+            return Massa
+        end
+    end
+	return false
+end
+
+function getoven()
+	if workspace:FindFirstChild("Ovens").Oven.Door.Bottom.CFrame.UpVector.X == -1 then
+		return workspace:FindFirstChild("Ovens").Oven
+	end
+
+    for _,o in next, workspace:FindFirstChild("Ovens"):GetChildren() do
+        if o.Door.Bottom.CFrame.UpVector.X == -1 then
+            return o
+        end
+    end
+	return false
+end
+
+function interest(hum, part)
+	local Touch_Part = cloneref(part)
+	local cf = Touch_Part.CFrame
+	local size = Touch_Part.Size
+	local tr = Touch_Part.Transparency
+	Touch_Part.Transparency = 0
+	Touch_Part.CanCollide = false
+	Touch_Part.Size = Vector3.new(0,0,0) 
+	Touch_Part.CFrame = hum.CFrame
+	task.wait()
+	Touch_Part.CFrame = cf
+	Touch_Part.CanCollide = false
+	Touch_Part.CFrame = CFrame.new(Vector3.new(0,-3,0))
+	Touch_Part.Size =  Vector3.new(0,0,0)
+	Touch_Part.Transparency = 0
+end
+
+local supplyCounts = {TomatoSauce=0,Cheese=0,Sausage=0,Pepperoni=0,Dough=0,Box=0,Dew=0}
+for name in pairs(supplyCounts) do
+    for _,Get in next, workspace.SupplyCounters:GetChildren() do
+        if Get:FindFirstChild(name=="Dew" and "CounterMountainDew" or "Counter"..name) and (Get:FindFirstChild(name=="Dew" and "CounterMountainDew" or "Counter"..name).a) then
+            local lbl = Get:FindFirstChild(name=="Dew" and "CounterMountainDew" or "Counter"..name).a.SG.Counter
+            supplyCounts[name]=tonumber(lbl.Text)
+            lbl.Changed:Connect(function()
+                supplyCounts[name]=tonumber(lbl.Text)
+            end)
+        end
+    end
+end
+
+local SupplyLift = {}
+table.insert(SupplyLift, workspace.SupplyLift)
+table.insert(SupplyLift, workspace.SupplyLift2)
+
+local bcolorToSupply = {["Dark orange"]="Sausage",["Bright blue"]="Pepperoni",["Bright yellow"]="Cheese",["Bright red"]="TomatoSauce",["Dark green"]="Dew",["Brick yellow"]="Dough",["Light stone grey"]="Box",["Really black"]="Dew", ["Navy blue"] = "Dew"}
+local supplyButtons = {}
+for i,v in ipairs(workspace.SupplyButtons:GetChildren()) do
+    v.Unpressed.CanCollide = false
+	supplyButtons[i] = v.Unpressed
+end
+
+workspace.CDough.ChildAdded:Connect(function(pizza)
+    pizza:GetPropertyChangedSignal("BrickColor"):Connect(function()
+         if pizza.BrickColor.Name == "Bright orange" then
+            network:FireServer("UpdateProperty", pizza, "Anchored", false)
+            network:FireServer("UpdateProperty", pizza, "CFrame", CFrame.new(math.random(56,57),4.1,38))
+            task.wait(1)
+             
+            network:FireServer("UpdateProperty", pizza, "CFrame", CFrame.new(63.74, 10.01, 25.99))
+         end
+     end)
+     pizza:GetPropertyChangedSignal("Parent"):Connect(function()
+         if not pizza.Parent == workspace.CDough then
+             table.remove(CookingPizzas, table.find(CookingPizzas, pizza:GetAttribute("Id")))
+             print("Removido com sucesso id: " .. pizza:GetAttribute("Id"))
+         end
+     end)
+ end)
+ 
+ local istpc = false
+ task.spawn(function() 
+     while true do task.wait()
+         if doCozinha then
+             for _,o in next, workspace.Ovens:GetChildren() do
+                 local bar = o:FindFirstChild('Door').Meter.SurfaceGui.ProgressBar.Bar
+                 if #Folder:GetChildren() <= 3 and o.IsOpen.Value==false and (o.IsCooking.Value==false or (Vector3.new(bar.ImageColor3.r,bar.ImageColor3.g,bar.ImageColor3.b)-Vector3.new(.871,.518,.224)).magnitude>.1) then
+                     if (LocalPlayer.Character.HumanoidRootPart.Position-Vector3.new(45.32, 6.52, 48.81)).magnitude>9 then TP(CFrame.new(45.32, 6.52, 48.81))  task.wait(.9) end
+                     if istpc then
+                         while doCozinha and not istpc do task.wait() end
+                         TP(CFrame.new(45.32, 6.52, 48.81))
+                     end
+                     if o and o:FindFirstChild('Door') then
+                         -- while doCozinha and not o.Door.Bottom.CFrame.UpVector.X == -1 do task.wait(.10)
+                             o:FindFirstChild('Door').ClickDetector.Detector:FireServer()
+                             task.wait(.30)
+                            -- end      
+                     end
+                 end
+             end
+         
+         end
+     end
+ end)
+ 
+ function interests(hum, part)
+     local Touch_Part = part
+     cf = Touch_Part.CFrame
+     size = Touch_Part.Size
+     tr = Touch_Part.Transparency
+     Touch_Part.Transparency = 1
+     Touch_Part.CanCollide = false
+     Touch_Part.Size = Vector3.new(0.1,0.1,0.1)
+     for i = 1,3 do task.wait(0.1)
+     Touch_Part.CFrame = hum.CFrame
+     end
+     task.wait()
+     Touch_Part.CanCollide = true
+     Touch_Part.CFrame = cf
+     Touch_Part.Size = size
+     Touch_Part.Transparency = tr
+ end
+
+function stay()
+    if InvBool then
+        InvBool = false
+        CF = root.CFrame
+    
+        root.CFrame =
+    
+        CFrame.new(1.07859674e+09, 1.36137216e+09, 1847919.38)
+        
+        wait(3)
+    
+        game.ReplicatedStorage.PlayerChannel:FireServer("PlayerEditingAvatar", true)
+    
+        wait(1)
+    
+        root.CFrame = CF
+        InvBool = true
+    end
+end
+
+
+
+Players.PlayerAdded:Connect(function(plr)
+    if InvisibilidadeV then
+        wait(4)
+ 
+        local pos = plr.Character:FindFirstChild("HumanoidRootPart").Position
+    
+        while true do task.wait()
+            if (pos - plr.Character:FindFirstChild("HumanoidRootPart").Position).Magnitude >= 6 then
+                stay()
+                break
+            end
+        end
+    end
+end)
+
+local function move(des)
+
+    local Pathfinding = game:GetService("PathfindingService")
+    local RunService = game:GetService("RunService")
+	Char.Humanoid.WalkSpeed = 26
+    local WayPoints
+
+    local path = Pathfinding:CreatePath({
+        AgentHeight = 3;
+        AgentRadius = 2;
+        AgentCanJump = true;
+        AgentCanClimb = true;
+    })
+        
+    path:ComputeAsync(root.Position, des)
+
+    WayPoints = path:GetWaypoints()
+
+    for i,p in ipairs(WayPoints) do
+    
+        while ((root.Position - p.Position).Magnitude > 3) do task.wait()
+            
+            Char.Humanoid:MoveTo(p.Position)
+        end
+    end
+end
+
+for _,n in next, workspace:GetDescendants() do
+    if n:IsA("Part") and n.Position.Y <= 1 and n.Transparency < 1 and n.Position.Z >= 76 or n.Name == "BasePlate" or n.Name == "Street" then
+        table.insert(Floors, n)
+    end
+end
+
+local cameraArray = {CFrame.new(23,14,65,0.629,0.386,-0.674,-0,0.867,0.497,0.777,-0.313,0.545),CFrame.new(39,15,83,-0.571,0.392,-0.720,-0,0.878,0.478,0.820,0.273,-0.502),CFrame.new(40,20,-38,-0.801,-0.229,0.552,-0,0.923,0.384,-0.598,0.307,-0.739),CFrame.new(51,15,-25,-0.707,0.338,-0.620,0,0.878,0.478,0.707,0.338,-0.620),CFrame.new(47,12,21,0.026,0.323,-0.945,-0,0.946,0.323,0.999,-0.008,0.024)}
+local Farm = Instance.new("ScreenGui")
+do
+    local Farm_2 = Instance.new("Frame")
+    local Farm_3 = Instance.new("TextLabel")
+    local Mais = Instance.new("TextButton")
+    local Menimizar = Instance.new("TextButton")
+    local Sair = Instance.new("TextButton")
+    local Status = Instance.new("Frame")
+    local StatusText = Instance.new("TextLabel")
+    local Ganhos = Instance.new("TextLabel")
+    local Num = Instance.new("TextLabel")
+    local Entregues = Instance.new("TextLabel")
+    local Num_2 = Instance.new("TextLabel")
+    local Rank = Instance.new("TextLabel")
+    local Num_3 = Instance.new("TextLabel")
+    local Fornecedor = Instance.new("TextLabel")
+    local Molho = Instance.new("TextLabel")
+    local MolhoC = Instance.new("TextLabel")
+    local Queijo = Instance.new("TextLabel")
+    local QueijoC = Instance.new("TextLabel")
+    local Peperoni = Instance.new("TextLabel")
+    local PeperoniC = Instance.new("TextLabel")
+    local Sausage = Instance.new("TextLabel")
+    local SausageC = Instance.new("TextLabel")
+    local Massa = Instance.new("TextLabel")
+    local MassaC = Instance.new("TextLabel")
+    local Caixas = Instance.new("TextLabel")
+    local CaixasC = Instance.new("TextLabel")
+    local Refri = Instance.new("TextLabel")
+    local RefriC = Instance.new("TextLabel")
+    local Presentes = Instance.new("TextLabel")
+    local Abrir = Instance.new("TextButton")
+    local AntiL = Instance.new("TextButton")
+    local Vender = Instance.new("TextButton")
+    local Teleport = Instance.new("TextButton")
+    local Teleport_Lento = Instance.new("TextButton")
+    local Extra = Instance.new("TextButton")
+    local Frame_Extra = Instance.new("Frame")
+    local At = Instance.new("TextLabel")
+    local End = Instance.new("TextLabel")
+    local ID_2 = Instance.new("TextBox")
+    local ID_3 = Instance.new("TextBox")
+    local Paycheck = Instance.new("TextButton")
+    local Afk = Instance.new("TextButton")
+    local Anti_Lag = Instance.new("TextButton")
+    local Entregar = Instance.new("TextLabel")
+    local ID_4 = Instance.new("TextBox")
+    local Invisibilidade = Instance.new("TextButton")
+    local Time = Instance.new("TextLabel")
+    local Tempo = Instance.new("TextLabel")
+    local Cam = Instance.new("Frame")
+    local Cam_2 = Instance.new("ImageButton")
+    local Direita = Instance.new("TextButton")
+    local Esquerda = Instance.new("TextButton")
+    local Caixar = Instance.new("TextButton")
+    local Cozinha = Instance.new("TextButton")
+    local Entregador = Instance.new("TextButton")
+    local Empacotador = Instance.new("TextButton")
+    local Andar = Instance.new("TextButton")
+    local Fornecedor_2 = Instance.new("TextButton")
+    local Des = Instance.new("TextButton")
+
+    --Properties:
+
+    Farm.Name = "Farm"
+    Farm.Parent = game.CoreGui
+
+    Farm_2.Name = "Farm"
+    Farm_2.Parent = Farm
+    Farm_2.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Farm_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Farm_2.BorderSizePixel = 0
+    Farm_2.Position = UDim2.new(0.263098836, 0, 0.0442331582, 0)
+    Farm_2.Size = UDim2.new(0, 334, 0, 99)
+    Farm_2.Style = Enum.FrameStyle.RobloxRound
+    Farm_2.Visible = true
+    Farm_2.Active = true
+    Farm_2.Draggable = true
+
+    Farm_3.Name = "Farm"
+    Farm_3.Parent = Farm_2
+    Farm_3.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Farm_3.BackgroundTransparency = 1.000
+    Farm_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Farm_3.BorderSizePixel = 0
+    Farm_3.Position = UDim2.new(-0.0547313578, 0, -0.107219622, 0)
+    Farm_3.Size = UDim2.new(0, 60, 0, 18)
+    Farm_3.Font = Enum.Font.FredokaOne
+    Farm_3.LineHeight = 2.900
+    Farm_3.Text = "Farm"
+    Farm_3.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Farm_3.TextSize = 14.000
+
+    Mais.Name = "Mais"
+    Mais.Parent = Farm_2
+    Mais.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Mais.BackgroundTransparency = 1.000
+    Mais.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Mais.BorderSizePixel = 0
+    Mais.Position = UDim2.new(0.874117732, 0, 0.759644926, 0)
+    Mais.Size = UDim2.new(0, 46, 0, 16)
+    Mais.Font = Enum.Font.FredokaOne
+    Mais.Text = "More"
+    Mais.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Mais.TextSize = 14.000
+    Mais.MouseButton1Click:Connect(function()
+        if Status.Visible then
+            Status.Visible = false
+            Mais.TextColor3 = Color3.fromRGB(85, 170, 255)
+        else
+            Status.Visible = true
+            Mais.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Menimizar.Name = "Menimizar"
+    Menimizar.Parent = Farm_2
+    Menimizar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Menimizar.BackgroundTransparency = 1.000
+    Menimizar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Menimizar.BorderSizePixel = 0
+    Menimizar.Position = UDim2.new(0.906663358, 0, -0.138928309, 0)
+    Menimizar.Size = UDim2.new(0, 13, 0, 12)
+    Menimizar.Font = Enum.Font.FredokaOne
+    Menimizar.Text = "_"
+    Menimizar.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Menimizar.TextSize = 14.000
+
+    Sair.Name = "Sair"
+    Sair.Parent = Farm_2
+    Sair.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Sair.BackgroundTransparency = 1.000
+    Sair.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Sair.BorderSizePixel = 0
+    Sair.Position = UDim2.new(0.968515754, 0, -0.0821238831, 0)
+    Sair.Size = UDim2.new(0, 16, 0, 16)
+    Sair.Font = Enum.Font.FredokaOne
+    Sair.Text = "X"
+    Sair.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Sair.TextSize = 14.000
+    Sair.MouseButton1Click:Connect(function()
+        Farm:Destroy()
+    end)
+
+    Status.Name = "Status"
+    Status.Parent = Farm_2
+    Status.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Status.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Status.BorderSizePixel = 0
+    Status.Position = UDim2.new(-0.251668781, 0, 1.25277758, 0)
+    Status.Size = UDim2.new(0, 417, 0, 195)
+    Status.Style = Enum.FrameStyle.RobloxRound
+    Status.Visible = false
+
+    StatusText.Name = "StatusText"
+    StatusText.Parent = Status
+    StatusText.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    StatusText.BackgroundTransparency = 1.000
+    StatusText.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    StatusText.BorderSizePixel = 0
+    StatusText.Position = UDim2.new(0.775004208, 0, -0.0373710431, 0)
+    StatusText.Size = UDim2.new(0, 93, 0, 18)
+    StatusText.Font = Enum.Font.FredokaOne
+    StatusText.LineHeight = 2.900
+    StatusText.Text = "Game Status"
+    StatusText.TextColor3 = Color3.fromRGB(254, 223, 128)
+    StatusText.TextSize = 14.000
+
+    Ganhos.Name = "Ganhos"
+    Ganhos.Parent = StatusText
+    Ganhos.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Ganhos.BackgroundTransparency = 1.000
+    Ganhos.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Ganhos.BorderSizePixel = 0
+    Ganhos.Position = UDim2.new(0.081347391, 0, 7.8849225, 0)
+    Ganhos.Size = UDim2.new(0, 77, 0, 18)
+    Ganhos.Font = Enum.Font.FredokaOne
+    Ganhos.LineHeight = 2.900
+    Ganhos.Text = "Spended Money"
+    Ganhos.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Ganhos.TextSize = 14.000
+
+    Num.Name = "Num"
+    Num.Parent = Ganhos
+    Num.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Num.BackgroundTransparency = 1.000
+    Num.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Num.BorderSizePixel = 0
+    Num.Position = UDim2.new(0.00160990132, 0, 1.38492155, 0)
+    Num.Size = UDim2.new(0, 77, 0, 18)
+    Num.Font = Enum.Font.FredokaOne
+    Num.LineHeight = 2.900
+    Num.Text = "0"
+    Num.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Num.TextSize = 14.000
+    task.spawn(function()
+        while Num do task.wait(1)
+            Num.Text = tostring(game.Players.LocalPlayer.Moneyz.Value - Moneyz)
+        end
+    end)
+
+    Entregues.Name = "Entregues"
+    Entregues.Parent = StatusText
+    Entregues.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Entregues.BackgroundTransparency = 1.000
+    Entregues.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Entregues.BorderSizePixel = 0
+    Entregues.Position = UDim2.new(0.081347391, 0, 1.32936692, 0)
+    Entregues.Size = UDim2.new(0, 77, 0, 18)
+    Entregues.Font = Enum.Font.FredokaOne
+    Entregues.LineHeight = 2.900
+    Entregues.Text = "Pizzas Delivered"
+    Entregues.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Entregues.TextSize = 14.000
+
+    Num_2.Name = "Num"
+    Num_2.Parent = Entregues
+    Num_2.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Num_2.BackgroundTransparency = 1.000
+    Num_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Num_2.BorderSizePixel = 0
+    Num_2.Position = UDim2.new(0.274337173, 0, 1.60714471, 0)
+    Num_2.Size = UDim2.new(0, 35, 0, 18)
+    Num_2.Font = Enum.Font.FredokaOne
+    Num_2.LineHeight = 2.900
+    Num_2.Text = "0"
+    Num_2.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Num_2.TextSize = 14.000
+    -- Num_2.Text = workspace.Leaderboards.MostOrders.MyScore.SurfaceGui.TextLabel.Text:split(": ")[2]
+    -- workspace.Leaderboards.MostOrders.MyScore.SurfaceGui.TextLabel.Changed:Connect(function()
+    --     Num_2.Text = workspace.Leaderboards.MostOrders.MyScore.SurfaceGui.TextLabel.Text:split(": ")[2]
+    -- end)
+
+    Rank.Name = "Rank"
+    Rank.Parent = StatusText
+    Rank.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Rank.BackgroundTransparency = 1.000
+    Rank.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Rank.BorderSizePixel = 0
+    Rank.Position = UDim2.new(0.081347391, 0, 4.77381134, 0)
+    Rank.Size = UDim2.new(0, 77, 0, 18)
+    Rank.Font = Enum.Font.FredokaOne
+    Rank.LineHeight = 2.900
+    Rank.Text = "Rank"
+    Rank.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Rank.TextSize = 14.000
+
+    Num_3.Name = "Num"
+    Num_3.Parent = Rank
+    Num_3.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Num_3.BackgroundTransparency = 1.000
+    Num_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Num_3.BorderSizePixel = 0
+    Num_3.Position = UDim2.new(0.00160990132, 0, 1.38492155, 0)
+    Num_3.Size = UDim2.new(0, 77, 0, 18)
+    Num_3.Font = Enum.Font.FredokaOne
+    Num_3.LineHeight = 2.900
+    Num_3.Text = "0"
+    Num_3.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Num_3.TextSize = 14.000
+
+    Fornecedor.Name = "Fornecedor"
+    Fornecedor.Parent = Status
+    Fornecedor.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Fornecedor.BackgroundTransparency = 1.000
+    Fornecedor.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Fornecedor.BorderSizePixel = 0
+    Fornecedor.Position = UDim2.new(0.0578698888, 0, -0.041148182, 0)
+    Fornecedor.Size = UDim2.new(0, 77, 0, 18)
+    Fornecedor.Font = Enum.Font.FredokaOne
+    Fornecedor.LineHeight = 2.900
+    Fornecedor.Text = "Supplier Stuff"
+    Fornecedor.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Fornecedor.TextSize = 14.000
+
+    Molho.Name = "Molho"
+    Molho.Parent = Status
+    Molho.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Molho.BackgroundTransparency = 1.000
+    Molho.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Molho.BorderSizePixel = 0
+    Molho.Position = UDim2.new(0.0340000018, 0, 0.200573549, 0)
+    Molho.Size = UDim2.new(0, 36, 0, 18)
+    Molho.Font = Enum.Font.FredokaOne
+    Molho.LineHeight = 2.900
+    Molho.Text = "Sauce"
+    Molho.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Molho.TextSize = 14.000
+
+
+    MolhoC.Name = "MolhoC"
+    MolhoC.Parent = Molho
+    MolhoC.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    MolhoC.BackgroundTransparency = 1.000
+    MolhoC.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    MolhoC.BorderSizePixel = 0
+    MolhoC.Position = UDim2.new(0.0359999985, 0, 1.20426857, 0)
+    MolhoC.Size = UDim2.new(0, 28, 0, 18)
+    MolhoC.Font = Enum.Font.FredokaOne
+    MolhoC.LineHeight = 2.900
+    MolhoC.Text = "0"
+    MolhoC.TextColor3 = Color3.fromRGB(254, 223, 128)
+    MolhoC.TextSize = 14.000
+    MolhoC.Text = workspace.SupplyCounters.Model.CounterTomatoSauce.a.SG.Counter.Text
+    workspace.SupplyCounters.Model.CounterTomatoSauce.a.SG.Counter.Changed:Connect(function()
+        MolhoC.Text = workspace.SupplyCounters.Model.CounterTomatoSauce.a.SG.Counter.Text
+        if tonumber(MolhoC.Text) == 0 then
+            MolhoC.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            MolhoC.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Queijo.Name = "Queijo"
+    Queijo.Parent = Status
+    Queijo.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Queijo.BackgroundTransparency = 1.000
+    Queijo.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Queijo.BorderSizePixel = 0
+    Queijo.Position = UDim2.new(0.211999997, 0, 0.187030494, 0)
+    Queijo.Size = UDim2.new(0, 36, 0, 18)
+    Queijo.Font = Enum.Font.FredokaOne
+    Queijo.LineHeight = 2.900
+    Queijo.Text = "Cheese"
+    Queijo.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Queijo.TextSize = 14.000
+
+    QueijoC.Name = "QueijoC"
+    QueijoC.Parent = Queijo
+    QueijoC.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    QueijoC.BackgroundTransparency = 1.000
+    QueijoC.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    QueijoC.BorderSizePixel = 0
+    QueijoC.Position = UDim2.new(0.0912729874, 0, 1.31537962, 0)
+    QueijoC.Size = UDim2.new(0, 28, 0, 18)
+    QueijoC.Font = Enum.Font.FredokaOne
+    QueijoC.LineHeight = 2.900
+    QueijoC.Text = "0"
+    QueijoC.TextColor3 = Color3.fromRGB(254, 223, 128)
+    QueijoC.TextSize = 14.000
+    QueijoC.Text = workspace.SupplyCounters.Model.CounterCheese.a.SG.Counter.Text
+    workspace.SupplyCounters.Model.CounterCheese.a.SG.Counter.Changed:Connect(function()
+        QueijoC.Text = workspace.SupplyCounters.Model.CounterCheese.a.SG.Counter.Text
+        if tonumber(QueijoC.Text) == 0 then
+            QueijoC.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            QueijoC.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Peperoni.Name = "Peperoni"
+    Peperoni.Parent = Status
+    Peperoni.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Peperoni.BackgroundTransparency = 1.000
+    Peperoni.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Peperoni.BorderSizePixel = 0
+    Peperoni.Position = UDim2.new(0.0340612754, 0, 0.453334332, 0)
+    Peperoni.Size = UDim2.new(0, 36, 0, 18)
+    Peperoni.Font = Enum.Font.FredokaOne
+    Peperoni.LineHeight = 2.900
+    Peperoni.Text = "Pepperoni"
+    Peperoni.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Peperoni.TextSize = 14.000
+
+    PeperoniC.Name = "PeperoniC"
+    PeperoniC.Parent = Peperoni
+    PeperoniC.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    PeperoniC.BackgroundTransparency = 1.000
+    PeperoniC.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    PeperoniC.BorderSizePixel = 0
+    PeperoniC.Position = UDim2.new(0.0357174352, 0, 1.37093437, 0)
+    PeperoniC.Size = UDim2.new(0, 28, 0, 18)
+    PeperoniC.Font = Enum.Font.FredokaOne
+    PeperoniC.LineHeight = 2.900
+    PeperoniC.Text = "0"
+    PeperoniC.TextColor3 = Color3.fromRGB(254, 223, 128)
+    PeperoniC.TextSize = 14.000
+    PeperoniC.Text = workspace.SupplyCounters.Model.CounterPepperoni.a.SG.Counter.Text
+    workspace.SupplyCounters.Model.CounterPepperoni.a.SG.Counter.Changed:Connect(function()
+        PeperoniC.Text = workspace.SupplyCounters.Model.CounterPepperoni.a.SG.Counter.Text
+        if tonumber(PeperoniC.Text) == 0 then
+            PeperoniC.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            PeperoniC.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Sausage.Name = "Sausage"
+    Sausage.Parent = Status
+    Sausage.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Sausage.BackgroundTransparency = 1.000
+    Sausage.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Sausage.BorderSizePixel = 0
+    Sausage.Position = UDim2.new(0.211894453, 0, 0.453724325, 0)
+    Sausage.Size = UDim2.new(0, 36, 0, 18)
+    Sausage.Font = Enum.Font.FredokaOne
+    Sausage.LineHeight = 2.900
+    Sausage.Text = "Sausage"
+    Sausage.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Sausage.TextSize = 14.000
+
+    SausageC.Name = "SausageC"
+    SausageC.Parent = Sausage
+    SausageC.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    SausageC.BackgroundTransparency = 1.000
+    SausageC.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    SausageC.BorderSizePixel = 0
+    SausageC.Position = UDim2.new(0.0909999982, 0, 1.25982332, 0)
+    SausageC.Size = UDim2.new(0, 28, 0, 18)
+    SausageC.Font = Enum.Font.FredokaOne
+    SausageC.LineHeight = 2.900
+    SausageC.Text = "0"
+    SausageC.TextColor3 = Color3.fromRGB(254, 223, 128)
+    SausageC.TextSize = 14.000
+    SausageC.Text = workspace.SupplyCounters.Model.CounterSausage.a.SG.Counter.Text
+    workspace.SupplyCounters.Model.CounterSausage.a.SG.Counter.Changed:Connect(function()
+        SausageC.Text = workspace.SupplyCounters.Model.CounterSausage.a.SG.Counter.Text
+        if tonumber(SausageC.Text) == 0 then
+            SausageC.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            SausageC.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Massa.Name = "Massa"
+    Massa.Parent = Status
+    Massa.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Massa.BackgroundTransparency = 1.000
+    Massa.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Massa.BorderSizePixel = 0
+    Massa.Position = UDim2.new(0.0340000018, 0, 0.725561917, 0)
+    Massa.Size = UDim2.new(0, 36, 0, 18)
+    Massa.Font = Enum.Font.FredokaOne
+    Massa.LineHeight = 2.900
+    Massa.Text = "Dough"
+    Massa.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Massa.TextSize = 14.000
+
+    MassaC.Name = "MassaC"
+    MassaC.Parent = Massa
+    MassaC.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    MassaC.BackgroundTransparency = 1.000
+    MassaC.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    MassaC.BorderSizePixel = 0
+    MassaC.Position = UDim2.new(0.0359999985, 0, 1.70426774, 0)
+    MassaC.Size = UDim2.new(0, 28, 0, 18)
+    MassaC.Font = Enum.Font.FredokaOne
+    MassaC.LineHeight = 2.900
+    MassaC.Text = "0"
+    MassaC.TextColor3 = Color3.fromRGB(254, 223, 128)
+    MassaC.TextSize = 14.000
+    MassaC.Text = workspace.SupplyCounters.Model.CounterDough.a.SG.Counter.Text
+    workspace.SupplyCounters.Model.CounterDough.a.SG.Counter.Changed:Connect(function()
+        MassaC.Text = workspace.SupplyCounters.Model.CounterDough.a.SG.Counter.Text
+        if tonumber(MassaC.Text) == 0 then
+            MassaC.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            MassaC.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Caixas.Name = "Caixas"
+    Caixas.Parent = Status
+    Caixas.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Caixas.BackgroundTransparency = 1.000
+    Caixas.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Caixas.BorderSizePixel = 0
+    Caixas.Position = UDim2.new(0.211999997, 0, 0.705837369, 0)
+    Caixas.Size = UDim2.new(0, 36, 0, 18)
+    Caixas.Font = Enum.Font.FredokaOne
+    Caixas.LineHeight = 2.900
+    Caixas.Text = "Boxes"
+    Caixas.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Caixas.TextSize = 14.000
+
+    CaixasC.Name = "CaixasC"
+    CaixasC.Parent = Caixas
+    CaixasC.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    CaixasC.BackgroundTransparency = 1.000
+    CaixasC.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    CaixasC.BorderSizePixel = 0
+    CaixasC.Position = UDim2.new(0.0909999982, 0, 1.87093437, 0)
+    CaixasC.Size = UDim2.new(0, 28, 0, 18)
+    CaixasC.Font = Enum.Font.FredokaOne
+    CaixasC.LineHeight = 2.900
+    CaixasC.Text = "0"
+    CaixasC.TextColor3 = Color3.fromRGB(254, 223, 128)
+    CaixasC.TextSize = 14.000
+    CaixasC.Text = workspace.SupplyCounters.Model.CounterBox.a.SG.Counter.Text
+    workspace.SupplyCounters.Model.CounterBox.a.SG.Counter.Changed:Connect(function()
+        CaixasC.Text = workspace.SupplyCounters.Model.CounterBox.a.SG.Counter.Text
+        if tonumber(CaixasC.Text) == 0 then
+            CaixasC.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            CaixasC.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Refri.Name = "Refri"
+    Refri.Parent = Status
+    Refri.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Refri.BackgroundTransparency = 1.000
+    Refri.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Refri.BorderSizePixel = 0
+    Refri.Position = UDim2.new(0.342954427, 0, 0.709460914, 0)
+    Refri.Size = UDim2.new(0, 36, 0, 18)
+    Refri.Font = Enum.Font.FredokaOne
+    Refri.LineHeight = 2.900
+    Refri.Text = "Soda"
+    Refri.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Refri.TextSize = 14.000
+
+    RefriC.Name = "RefriC"
+    RefriC.Parent = Refri
+    RefriC.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    RefriC.BackgroundTransparency = 1.000
+    RefriC.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    RefriC.BorderSizePixel = 0
+    RefriC.Position = UDim2.new(0.0909999982, 0, 1.87093437, 0)
+    RefriC.Size = UDim2.new(0, 28, 0, 18)
+    RefriC.Font = Enum.Font.FredokaOne
+    RefriC.LineHeight = 2.900
+    RefriC.Text = "0"
+    RefriC.TextColor3 = Color3.fromRGB(254, 223, 128)
+    RefriC.TextSize = 14.000
+    RefriC.Text = workspace.SupplyCounters.Model.CounterMountainDew.a.SG.Counter.Text
+    workspace.SupplyCounters.Model.CounterMountainDew.a.SG.Counter.Changed:Connect(function()
+        RefriC.Text = workspace.SupplyCounters.Model.CounterMountainDew.a.SG.Counter.Text
+        if RefriC.Text == "0" then
+            RefriC.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            RefriC.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Presentes.Name = "Presentes"
+    Presentes.Parent = Status
+    Presentes.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Presentes.BackgroundTransparency = 1.000
+    Presentes.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Presentes.BorderSizePixel = 0
+    Presentes.Position = UDim2.new(0.503581703, 0, -0.0370000005, 0)
+    Presentes.Size = UDim2.new(0, 77, 0, 18)
+    Presentes.Font = Enum.Font.FredokaOne
+    Presentes.LineHeight = 2.900
+    Presentes.Text = "Present's"
+    Presentes.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Presentes.TextSize = 14.000
+
+    Abrir.Name = "Abrir"
+    Abrir.Parent = Status
+    Abrir.BackgroundColor3 = Color3.fromRGB(49, 49, 49)
+    Abrir.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Abrir.BorderSizePixel = 0
+    Abrir.Position = UDim2.new(0.458000004, 0, 0.388378441, 0)
+    Abrir.Size = UDim2.new(0, 119, 0, 16)
+    Abrir.ZIndex = 10
+    Abrir.Style = Enum.ButtonStyle.RobloxButton
+    Abrir.Font = Enum.Font.FredokaOne
+    Abrir.Text = "Open all Present's"
+    Abrir.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Abrir.TextSize = 14.000
+    Abrir.MouseButton1Click:Connect(function()
+        for _,AbrirP in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+            if AbrirP:FindFirstChild("Rarity") then
+                AbrirP.PresentCamera.Disabled = true
+                local id = AbrirP.RewardAssetId.Value
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(AbrirP)
+                remote:FireServer("PutUnwrappedItemInInventory", AbrirP.RewardAssetId.Value)
+                AbrirP:Destroy()
+            end
+        end
+    end)
+
+    AntiL.Name = "AntiL"
+    AntiL.Parent = Status
+    AntiL.BackgroundColor3 = Color3.fromRGB(49, 49, 49)
+    AntiL.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    AntiL.BorderSizePixel = 0
+    AntiL.Position = UDim2.new(0.497570217, 0, 0.533554494, 0)
+    AntiL.Size = UDim2.new(0, 85, 0, 16)
+    AntiL.ZIndex = 10
+    AntiL.Style = Enum.ButtonStyle.RobloxButton
+    AntiL.Font = Enum.Font.FredokaOne
+    AntiL.Text = "Anti Lag 2"
+    AntiL.TextColor3 = Color3.fromRGB(254, 223, 128)
+    AntiL.TextSize = 14.000
+
+    Vender.Name = "Vender"
+    Vender.Parent = Status
+    Vender.BackgroundColor3 = Color3.fromRGB(49, 49, 49)
+    Vender.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Vender.BorderSizePixel = 0
+    Vender.Position = UDim2.new(0.458273679, 0, 0.243767053, 0)
+    Vender.Size = UDim2.new(0, 119, 0, 16)
+    Vender.ZIndex = 10
+    Vender.Style = Enum.ButtonStyle.RobloxButton
+    Vender.Font = Enum.Font.FredokaOne
+    Vender.Text = "Sell Present's"
+    Vender.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Vender.TextSize = 14.000
+    Vender.MouseButton1Click:Connect(function()
+        for _,VenderP in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+            if VenderP:FindFirstChild("Rarity") then
+                VenderP.PresentCamera.Disabled = true
+                local id = VenderP.RewardAssetId.Value
+                game.Players.LocalPlayer.Character.Humanoid:EquipTool(VenderP)
+                remote:FireServer("PutUnwrappedItemInInventory", VenderP.RewardAssetId.Value)
+                remote:FireServer("SellInventoryItem", id)
+                VenderP:Destroy()
+            end
+        end
+    end)
+
+    Teleport.Name = "Teleport"
+    Teleport.Parent = Farm_2
+    Teleport.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Teleport.BackgroundTransparency = 1.000
+    Teleport.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Teleport.BorderSizePixel = 0
+    Teleport.Position = UDim2.new(0.0565398447, 0, 0.836633563, 0)
+    Teleport.Size = UDim2.new(0, 46, 0, 16)
+    Teleport.Font = Enum.Font.FredokaOne
+    Teleport.Text = "Teleport Fast"
+    Teleport.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Teleport.TextSize = 14.000
+
+    Teleport.MouseButton1Click:Connect(function()
+        if not TeleportV then
+            AndarV = false
+            TeleportV = true
+            Teleport_LentoV = false
+            Andar.TextColor3 = Color3.fromRGB(254, 85, 55)
+            Teleport.TextColor3 = Color3.fromRGB(254, 223, 128)
+            Teleport_Lento.TextColor3 = Color3.fromRGB(254, 85, 55)
+        end
+    end)
+
+    Teleport_Lento.Name = "Teleport_Lento"
+    Teleport_Lento.Parent = Farm_2
+    Teleport_Lento.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Teleport_Lento.BackgroundTransparency = 1.000
+    Teleport_Lento.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Teleport_Lento.BorderSizePixel = 0
+    Teleport_Lento.Position = UDim2.new(0.351294428, 0, 0.836633563, 0)
+    Teleport_Lento.Size = UDim2.new(0, 46, 0, 16)
+    Teleport_Lento.Font = Enum.Font.FredokaOne
+    Teleport_Lento.Text = ""
+    Teleport_Lento.TextColor3 = Color3.fromRGB(254, 85, 55)
+    Teleport_Lento.TextSize = 14.000
+
+    Teleport_Lento.MouseButton1Click:Connect(function()
+        if Teleport_LentoV then
+            AndarV = false
+            TeleportV = true
+            Teleport_LentoV = false
+            Andar.TextColor3 = Color3.fromRGB(254, 85, 55)
+            Teleport.TextColor3 = Color3.fromRGB(254, 223, 128)
+            Teleport_Lento.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            Teleport_LentoV = true
+            TeleportV = false
+            AndarV = false
+            Teleport_Lento.TextColor3 = Color3.fromRGB(254, 223, 128)
+            Teleport.TextColor3 = Color3.fromRGB(254, 85, 55)
+            Andar.TextColor3 = Color3.fromRGB(254, 85, 55)
+        end
+    end)
+
+    Extra.Name = "Extra"
+    Extra.Parent = Farm_2
+    Extra.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Extra.BackgroundTransparency = 1.000
+    Extra.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Extra.BorderSizePixel = 0
+    Extra.Position = UDim2.new(0.877260864, 0, 0.43890503, 0)
+    Extra.Size = UDim2.new(0, 46, 0, 16)
+    Extra.Font = Enum.Font.FredokaOne
+    Extra.Text = "Extra"
+    Extra.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Extra.TextSize = 14.000
+    Extra.MouseButton1Click:Connect(function()
+        if Frame_Extra.Visible then
+            Frame_Extra.Visible = false
+            Extra.TextColor3 = Color3.fromRGB(85, 170, 255)
+        else
+            Frame_Extra.Visible = true
+            Extra.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Frame_Extra.Name = "Frame_Extra"
+    Frame_Extra.Parent = Farm_2
+    Frame_Extra.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Frame_Extra.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Frame_Extra.BorderSizePixel = 0
+    Frame_Extra.Position = UDim2.new(1.12156582, 0, -0.00249373307, 0)
+    Frame_Extra.Size = UDim2.new(0, 168, 0, 141)
+    Frame_Extra.Style = Enum.FrameStyle.RobloxRound
+    Frame_Extra.Visible = false
+
+    At.Name = "At"
+    At.Parent = Frame_Extra
+    At.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    At.BackgroundTransparency = 1.000
+    At.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    At.BorderSizePixel = 0
+    At.Position = UDim2.new(-0.00443166448, 0, -0.0565522388, 0)
+    At.Size = UDim2.new(0, 37, 0, 18)
+    At.Font = Enum.Font.FredokaOne
+    At.LineHeight = 2.900
+    At.Text = "At"
+    At.TextColor3 = Color3.fromRGB(254, 223, 128)
+    At.TextSize = 14.000
+
+    End.Name = "End"
+    End.Parent = At
+    End.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    End.BackgroundTransparency = 1.000
+    End.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    End.BorderSizePixel = 0
+    End.Position = UDim2.new(-0.512955964, 0, 1.16270018, 0)
+    End.Size = UDim2.new(0, 77, 0, 18)
+    End.Font = Enum.Font.FredokaOne
+    End.LineHeight = 2.900
+    End.Text = "End"
+    End.TextColor3 = Color3.fromRGB(254, 223, 128)
+    End.TextSize = 14.000
+
+    ID_2.Name = "ID"
+    ID_2.Parent = End
+    ID_2.BackgroundColor3 = Color3.fromRGB(17, 17, 17)
+    ID_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    ID_2.BorderSizePixel = 0
+    ID_2.Position = UDim2.new(0.718999982, 0, -0.050999999, 0)
+    ID_2.Size = UDim2.new(0, 23, 0, 17)
+    ID_2.Font = Enum.Font.FredokaOne
+    ID_2.Text = "99"
+    ID_2.TextColor3 = Color3.fromRGB(254, 223, 128)
+    ID_2.TextSize = 14.000
+    ID_2.Changed:Connect(function()
+        refill_end = tonumber(ID_2.Text) and tonumber(ID_2.Text) or 0
+    end)
+
+    ID_3.Name = "ID"
+    ID_3.Parent = At
+    ID_3.BackgroundColor3 = Color3.fromRGB(17, 17, 17)
+    ID_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    ID_3.BorderSizePixel = 0
+    ID_3.Position = UDim2.new(0.981000006, 0, -0.050999999, 0)
+    ID_3.Size = UDim2.new(0, 23, 0, 17)
+    ID_3.Font = Enum.Font.FredokaOne
+    ID_3.Text = "90"
+    ID_3.TextColor3 = Color3.fromRGB(254, 223, 128)
+    ID_3.TextSize = 14.000
+    ID_3.Changed:Connect(function()
+        refill_at = tonumber(ID_3.Text) and tonumber(ID_3.Text) or 0
+    end)
+
+    Paycheck.Name = "Paycheck"
+    Paycheck.Parent = Frame_Extra
+    Paycheck.BackgroundColor3 = Color3.fromRGB(49, 49, 49)
+    Paycheck.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Paycheck.BorderSizePixel = 0
+    Paycheck.Position = UDim2.new(-0.00353159406, 0, 0.373497456, 0)
+    Paycheck.Size = UDim2.new(0, 65, 0, 16)
+    Paycheck.ZIndex = 10
+    Paycheck.Style = Enum.ButtonStyle.RobloxButton
+    Paycheck.Font = Enum.Font.FredokaOne
+    Paycheck.Text = "PayCheck"
+    Paycheck.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Paycheck.TextSize = 14.000
+    Paycheck.MouseButton1Click:Connect(function()
+        if PaycheckV then
+            PaycheckV = false
+            Paycheck.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            PaycheckV = true
+            Paycheck.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    task.spawn(function()
+        while Paycheck do task.wait(1)
+            if PaycheckV then 
+                workspace.Main.GivePaycheck:FireServer("Paycheck")
+            end
+        end
+    end)
+
+    Afk.Name = "Afk"
+    Afk.Parent = Frame_Extra
+    Afk.BackgroundColor3 = Color3.fromRGB(49, 49, 49)
+    Afk.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Afk.BorderSizePixel = 0
+    Afk.Position = UDim2.new(0.0602678023, 0, 0.824099779, 0)
+    Afk.Size = UDim2.new(0, 43, 0, 16)
+    Afk.ZIndex = 10
+    Afk.Style = Enum.ButtonStyle.RobloxButton
+    Afk.Font = Enum.Font.FredokaOne
+    Afk.Text = "Afk"
+    Afk.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Afk.TextSize = 14.000
+    Afk.MouseButton1Click:Connect(function()
+        if AfkV then
+            AfkV = false
+            Afk.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            AfkV = true
+            Afk.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Anti_Lag.Name = "Anti_Lag"
+    Anti_Lag.Parent = Frame_Extra
+    Anti_Lag.BackgroundColor3 = Color3.fromRGB(49, 49, 49)
+    Anti_Lag.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Anti_Lag.BorderSizePixel = 0
+    Anti_Lag.Position = UDim2.new(0.0118391132, 0, 0.61221385, 0)
+    Anti_Lag.Size = UDim2.new(0, 63, 0, 16)
+    Anti_Lag.ZIndex = 10
+    Anti_Lag.Style = Enum.ButtonStyle.RobloxButton
+    Anti_Lag.Font = Enum.Font.FredokaOne
+    Anti_Lag.Text = "Anti Lag"
+    Anti_Lag.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Anti_Lag.TextSize = 14.000
+    Anti_Lag.MouseButton1Click:Connect(function()
+        if Anti_LagV then
+            Anti_LagV = false
+            if antd then
+                antd:Disconnect()
+            end
+            game.Workspace.CurrentCamera.CameraSubject = game.Players.LocalPlayer.Character
+            Anti_Lag.TextColor3 = Color3.fromRGB(85, 170, 255)
+        else
+            Anti_LagV = true
+            Anti_Lag.TextColor3 = Color3.fromRGB(254, 223, 128)
+            task.spawn(function()
+            local function ant()
+                    if Anti_Lag then
+                        if Anti_LagV then
+                            game.Workspace.CurrentCamera.CFrame = CFrame.new(Vector3.new(1.07859674e+09, 1.36137216e+09, 1847919.38))
+                        end
+                    end
+                end
+                antd = game:GetService("RunService").RenderStepped:Connect(ant)
+            end)
+        end
+    end)
+
+    Entregar.Name = "Entregar"
+    Entregar.Parent = Frame_Extra
+    Entregar.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Entregar.BackgroundTransparency = 1.000
+    Entregar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Entregar.BorderSizePixel = 0
+    Entregar.Position = UDim2.new(0.54808265, 0, -0.0946888924, 0)
+    Entregar.Size = UDim2.new(0, 37, 0, 18)
+    Entregar.Font = Enum.Font.FredokaOne
+    Entregar.LineHeight = 2.900
+    Entregar.Text = "Deliver at"
+    Entregar.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Entregar.TextSize = 14.000
+
+    ID_4.Name = "ID"
+    ID_4.Parent = Entregar
+    ID_4.BackgroundColor3 = Color3.fromRGB(17, 17, 17)
+    ID_4.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    ID_4.BorderSizePixel = 0
+    ID_4.Position = UDim2.new(0.171000004, 0, 1.16299999, 0)
+    ID_4.Size = UDim2.new(0, 23, 0, 17)
+    ID_4.Font = Enum.Font.FredokaOne
+    ID_4.Text = "0"
+    ID_4.TextColor3 = Color3.fromRGB(254, 223, 128)
+    ID_4.TextSize = 14.000
+
+    Invisibilidade.Name = "Invisibilidade"
+    Invisibilidade.Parent = Frame_Extra
+    Invisibilidade.BackgroundColor3 = Color3.fromRGB(49, 49, 49)
+    Invisibilidade.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Invisibilidade.BorderSizePixel = 0
+    Invisibilidade.Position = UDim2.new(0.431149423, 0, 0.372999996, 0)
+    Invisibilidade.Size = UDim2.new(0, 86, 0, 16)
+    Invisibilidade.ZIndex = 10
+    Invisibilidade.Style = Enum.ButtonStyle.RobloxButton
+    Invisibilidade.Font = Enum.Font.FredokaOne
+    Invisibilidade.Text = "Invisibility"
+    Invisibilidade.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Invisibilidade.TextSize = 14.000
+    Invisibilidade.MouseButton1Click:Connect(function()
+        if InvisibilidadeV then
+            InvisibilidadeV = false
+            Invisibilidade.TextColor3 = Color3.fromRGB(85, 170, 255)
+        else
+            InvisibilidadeV = true
+            stay()
+            Invisibilidade.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Time.Name = "Time"
+    Time.Parent = Frame_Extra
+    Time.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Time.BackgroundTransparency = 1.000
+    Time.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Time.BorderSizePixel = 0
+    Time.Position = UDim2.new(0.510005057, 0, 0.611999989, 0)
+    Time.Size = UDim2.new(0, 60, 0, 18)
+    Time.Font = Enum.Font.FredokaOne
+    Time.LineHeight = 2.900
+    Time.Text = "Used for"
+    Time.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Time.TextSize = 14.000
+
+    Tempo.Name = "Tempo"
+    Tempo.Parent = Frame_Extra
+    Tempo.BackgroundColor3 = Color3.fromRGB(130, 205, 239)
+    Tempo.BackgroundTransparency = 1.000
+    Tempo.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Tempo.BorderSizePixel = 0
+    Tempo.Position = UDim2.new(0.509052098, 0, 0.824000001, 0)
+    Tempo.Size = UDim2.new(0, 60, 0, 18)
+    Tempo.Font = Enum.Font.FredokaOne
+    Tempo.LineHeight = 2.900
+    Tempo.Text = "00:00:00:00"
+    Tempo.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Tempo.TextSize = 14.000
+
+    task.spawn(function()
+        local tempoInicial = tick()
+
+            local function atualizarCronometro()
+            local tempoAtual = tick() - tempoInicial
+
+            local segundos = math.floor(tempoAtual % 60)
+            local minutos = math.floor((tempoAtual / 60) % 60)
+            local horas = math.floor((tempoAtual / 3600) % 24)
+            local dias = math.floor(tempoAtual / 86400)
+            Tempo.Text = string.format("%02d:%02d:%02d:%02d", dias, horas, minutos, segundos)
+        end
+        game:GetService("RunService").Stepped:Connect(atualizarCronometro)
+    end)
+
+    Cam.Name = "Cam"
+    Cam.Parent = Frame_Extra
+    Cam.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Cam.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Cam.BorderSizePixel = 0
+    Cam.Position = UDim2.new(0.267384857, 0, 1.11501682, 0)
+    Cam.Size = UDim2.new(0, 78, 0, 30)
+    Cam.Style = Enum.FrameStyle.RobloxRound
+
+    Cam_2.Name = "Cam"
+    Cam_2.Parent = Cam
+    Cam_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Cam_2.BackgroundTransparency = 1.000
+    Cam_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Cam_2.BorderSizePixel = 0
+    Cam_2.Position = UDim2.new(0.176816896, 0, -0.636012495, 0)
+    Cam_2.Size = UDim2.new(0, 38, 0, 27)
+    Cam_2.Image = "http://www.roblox.com/asset/?id=6125281125"
+    Cam_2.MouseButton1Click:Connect(function()
+        workspace.CurrentCamera.CameraType = "Custom"
+        workspace.CurrentCamera.CameraSubject = root
+    end)
+
+    Direita.Name = "Direita"
+    Direita.Parent = Cam
+    Direita.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Direita.BackgroundTransparency = 1.000
+    Direita.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Direita.BorderSizePixel = 0
+    Direita.Position = UDim2.new(0.835380375, 0, -0.35849914, 0)
+    Direita.Size = UDim2.new(0, 17, 0, 22)
+    Direita.Font = Enum.Font.FredokaOne
+    Direita.Text = ">"
+    Direita.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Direita.TextSize = 14.000
+    -- Direita.MouseButton1Click:Connect(function()
+    --     workspace.CurrentCamera.CameraType="Scriptable"
+    --     if CamV > #cameraArray then
+    --         CamV = 1
+    --         game.Workspace.CurrentCamera.CameraSubject = root
+    --     else
+    --         CamV += 1
+    --         --game.Workspace.CurrentCamera.CFrame = cameraArray[CamV]
+    --     end
+    -- end)
+
+    Esquerda.Name = "Esquerda"
+    Esquerda.Parent = Cam
+    Esquerda.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Esquerda.BackgroundTransparency = 1.000
+    Esquerda.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Esquerda.BorderSizePixel = 0
+    Esquerda.Position = UDim2.new(-0.121724837, 0, -0.342904657, 0)
+    Esquerda.Size = UDim2.new(0, 17, 0, 22)
+    Esquerda.Font = Enum.Font.FredokaOne
+    Esquerda.Text = "<"
+    Esquerda.TextColor3 = Color3.fromRGB(254, 223, 128)
+    Esquerda.TextSize = 14.000
+    -- Esquerda.MouseButton1Click:Connect(function()
+    --     workspace.CurrentCamera.CameraType="Scriptable"
+    --     if CamV <= 0 then
+    --         CamV = #cameraArray
+    --     else
+    --         CamV -= 1
+    --         game.Workspace.CurrentCamera.CFrame = cameraArray[CamV]
+    --     end
+
+    -- end)
+
+    Caixar.Name = "Caixar"
+    Caixar.Parent = Farm_2
+    Caixar.BackgroundColor3 = Color3.fromRGB(59, 59, 59)
+    Caixar.BorderColor3 = Color3.fromRGB(57, 57, 57)
+    Caixar.BorderSizePixel = 0
+    Caixar.Position = UDim2.new(0.0159088857, 0, 0.144999996, 0)
+    Caixar.Size = UDim2.new(0, 59, 0, 16)
+    Caixar.ZIndex = 10
+    Caixar.Style = Enum.ButtonStyle.RobloxButton
+    Caixar.Font = Enum.Font.FredokaOne
+    Caixar.Text = "Cashier"
+    Caixar.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Caixar.TextSize = 14.000
+    Caixar.MouseButton1Click:Connect(function()
+        Caixar.TextColor3 = doCaixa and Color3.fromRGB(85, 170, 255) or Color3.fromRGB(254, 223, 128)
+        doCaixa = not doCaixa
+    end)
+
+    Cozinha.Name = "Cozinha"
+    Cozinha.Parent = Farm_2
+    Cozinha.BackgroundColor3 = Color3.fromRGB(59, 59, 59)
+    Cozinha.BorderColor3 = Color3.fromRGB(57, 57, 57)
+    Cozinha.BorderSizePixel = 0
+    Cozinha.Position = UDim2.new(0.0160000008, 0, 0.499000013, 0)
+    Cozinha.Size = UDim2.new(0, 59, 0, 16)
+    Cozinha.ZIndex = 10
+    Cozinha.Style = Enum.ButtonStyle.RobloxButton
+    Cozinha.Font = Enum.Font.FredokaOne
+    Cozinha.Text = "Cook"
+    Cozinha.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Cozinha.TextSize = 14.000
+    Cozinha.MouseButton1Click:Connect(function()
+        if doCozinha then
+            doCozinha = false
+            Cozinha.TextColor3 = Color3.fromRGB(85, 170, 255)
+        else
+            doCozinha =  true
+            Cozinha.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Entregador.Name = "Entregador"
+    Entregador.Parent = Farm_2
+    Entregador.BackgroundColor3 = Color3.fromRGB(59, 59, 59)
+    Entregador.BorderColor3 = Color3.fromRGB(57, 57, 57)
+    Entregador.BorderSizePixel = 0
+    Entregador.Position = UDim2.new(0.254999995, 0, 0.499000013, 0)
+    Entregador.Size = UDim2.new(0, 87, 0, 16)
+    Entregador.ZIndex = 10
+    Entregador.Style = Enum.ButtonStyle.RobloxButton
+    Entregador.Font = Enum.Font.FredokaOne
+    Entregador.Text = "Delivery"
+    Entregador.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Entregador.TextSize = 14.000
+    Entregador.MouseButton1Click:Connect(function()
+        if doEntregador then
+            doEntregador = false
+            Entregador.TextColor3 = Color3.fromRGB(85, 170, 255)
+        else
+            doEntregador = true
+            Entregador.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Empacotador.Name = "Empacotador"
+    Empacotador.Parent = Farm_2
+    Empacotador.BackgroundColor3 = Color3.fromRGB(59, 59, 59)
+    Empacotador.BorderColor3 = Color3.fromRGB(57, 57, 57)
+    Empacotador.BorderSizePixel = 0
+    Empacotador.Position = UDim2.new(0.254805058, 0, 0.144999996, 0)
+    Empacotador.Size = UDim2.new(0, 87, 0, 16)
+    Empacotador.ZIndex = 10
+    Empacotador.Style = Enum.ButtonStyle.RobloxButton
+    Empacotador.Font = Enum.Font.FredokaOne
+    Empacotador.Text = "Boxer"
+    Empacotador.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Empacotador.TextSize = 14.000
+    Empacotador.MouseButton1Click:Connect(function()
+        if doEmpacotador then
+            doEmpacotador = false
+            Empacotador.TextColor3 = Color3.fromRGB(85, 170, 255)
+        else
+            doEmpacotador =  true
+            Empacotador.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Andar.Name = "Andar"
+    Andar.Parent = Farm_2
+    Andar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Andar.BackgroundTransparency = 1.000
+    Andar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Andar.BorderSizePixel = 0
+    Andar.Position = UDim2.new(0.557175875, 0, 0.837000012, 0)
+    Andar.Size = UDim2.new(0, 46, 0, 16)
+    Andar.Font = Enum.Font.FredokaOne
+    Andar.Text = ""
+    Andar.TextColor3 = Color3.fromRGB(254, 85, 55)
+    Andar.TextSize = 14.000
+
+    Andar.MouseButton1Click:Connect(function()
+        if AndarV then
+            AndarV = false
+            TeleportV = true
+            Teleport_LentoV = false
+            Andar.TextColor3 = Color3.fromRGB(254, 85, 55)
+            Teleport.TextColor3 = Color3.fromRGB(254, 223, 128)
+            Teleport_Lento.TextColor3 = Color3.fromRGB(254, 85, 55)
+        else
+            AndarV = true
+            TeleportV = false
+            Teleport_LentoV = false
+            Andar.TextColor3 = Color3.fromRGB(254, 223, 128)
+            Teleport.TextColor3 = Color3.fromRGB(254, 85, 55)
+            Teleport_Lento.TextColor3 = Color3.fromRGB(254, 85, 55)
+        end
+    end)
+
+    Fornecedor_2.Name = "Fornecedor"
+    Fornecedor_2.Parent = Farm_2
+    Fornecedor_2.BackgroundColor3 = Color3.fromRGB(59, 59, 59)
+    Fornecedor_2.BorderColor3 = Color3.fromRGB(57, 57, 57)
+    Fornecedor_2.BorderSizePixel = 0
+    Fornecedor_2.Position = UDim2.new(0.559000015, 0, 0.499000013, 0)
+    Fornecedor_2.Size = UDim2.new(0, 87, 0, 16)
+    Fornecedor_2.ZIndex = 10
+    Fornecedor_2.Style = Enum.ButtonStyle.RobloxButton
+    Fornecedor_2.Font = Enum.Font.FredokaOne
+    Fornecedor_2.Text = "Supplier"
+    Fornecedor_2.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Fornecedor_2.TextSize = 14.000
+    Fornecedor_2.MouseButton1Click:Connect(function()
+        if doFornecedor then
+            doFornecedor = false
+            Fornecedor_2.TextColor3 = Color3.fromRGB(85, 170, 255)
+        else
+            doFornecedor =  true
+            Fornecedor_2.TextColor3 = Color3.fromRGB(254, 223, 128)
+        end
+    end)
+
+    Des.Name = "Des"
+    Des.Parent = Farm_2
+    Des.BackgroundColor3 = Color3.fromRGB(59, 59, 59)
+    Des.BorderColor3 = Color3.fromRGB(57, 57, 57)
+    Des.BorderSizePixel = 0
+    Des.Position = UDim2.new(0.558593392, 0, 0.144999996, 0)
+    Des.Size = UDim2.new(0, 87, 0, 16)
+    Des.ZIndex = 10
+    Des.Style = Enum.ButtonStyle.RobloxButton
+    Des.Font = Enum.Font.FredokaOne
+    Des.Text = "Activate all"
+    Des.TextColor3 = Color3.fromRGB(85, 170, 255)
+    Des.TextSize = 14.000
+    local DesV = false
+    Des.MouseButton1Click:Connect(function()
+        if not DesV then
+            doCaixa, doCozinha,  doEmpacotador, doFornecedor, doEntregador = true, true, true, true, true
+            Des.TextColor3 = Color3.fromRGB(254, 223, 128)
+            Farm_2.Caixar.TextColor3, Farm_2.Cozinha.TextColor3, Farm_2.Empacotador.TextColor3, Farm_2.Entregador.TextColor3, Farm_2.Fornecedor.TextColor3 = 
+            Color3.fromRGB(254, 223, 128), Color3.fromRGB(254, 223, 128), Color3.fromRGB(254, 223, 128), Color3.fromRGB(254, 223, 128), Color3.fromRGB(254, 223, 128)
+            Des.Text = "Ativado"
+            DesV = true
+
+        elseif DesV then
+            doCaixa, doCozinha,  doEmpacotador, doFornecedor, doEntregador = false, false, false, false, false
+            Des.TextColor3 = Color3.fromRGB(254, 85, 55)
+            Farm_2.Caixar.TextColor3, Farm_2.Cozinha.TextColor3, Farm_2.Empacotador.TextColor3, Farm_2.Entregador.TextColor3, Farm_2.Fornecedor.TextColor3 = 
+            Color3.fromRGB(254, 85, 55), Color3.fromRGB(254, 85, 55), Color3.fromRGB(254, 85, 55), Color3.fromRGB(254, 85, 55), Color3.fromRGB(254, 85, 55)
+            Des.Text = "Desativado"
+            DesV = false
+        end
+    end)
+end
+
+function TP(cf)
+    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = cf
+    -- if TeleportV then
+    --     root.CFrame = cf
+    -- elseif Teleport_LentoV then
+    --     game:GetService("ReplicatedStorage"):WaitForChild("PlayerChannel"):FireServer("ChangeJob", job)
+    --     Char.Humanoid.Health = 0
+    --     -- local CharConnection = LocalPlayer.CharacterAdded:Connect(function(character)
+    --     --     task.wait()
+            
+    --     -- end)
+    --     LocalPlayer.CharacterAdded:Wait()
+    --     while not Char:FindFirstChild("Humanoid") do task.wait() end
+    --     move(cf.Position)
+    --     -- CharConnection:Disconnect()
+    -- elseif AndarV then
+    --     move(cf.Position)
+    -- end
+end
+
+task.spawn(function()
+    while true do task.wait(.9)
+        if not ishere then
+            ishere = true
+            if doCozinha then
+
+                local list = workspace.GameService.GetOrders:InvokeServer()
+
+                if list then
+                    --print("lista existe")
+                    for _,data in ipairs(list.AllOrders) do
+                        if data.Object ~= nil and data.Object.Name == "Orders" and not table.find(CookingPizzas, data.Id) then
+                            if oldp == data.Id then continue end
+                            if not doCozinha then break end
+
+                            local o = getoven()
+
+                            if not o then break end
+
+                            if data.Order == "MountainDew" then
+                            else
+                                --if (root.Position-Vector3.new(45.32, 6.52, 48.81)).magnitude>9 then  TP(CFrame.new(45.32, 6.52, 48.81)) task.wait(.9) end
+
+                                Dough = GetDough()
+                                if Dough then
+                                    
+                                    network:FireServer("AddIngredientToPizza", Dough, "Cheese")
+                                    network:FireServer("AddIngredientToPizza", Dough, "TomatoSauce")
+                                    network:FireServer("AddIngredientToPizza", Dough, data.Order:split("Pizza")[1])
+                                    print(data.Order:split("Pizza")[1], data.Id, "old", oldp)
+                                    
+                                
+                                    if o then
+                                        if o.IsOpen.Value then
+                                            network:FireServer("UpdateProperty", Dough, "CFrame", o.Bottom.CFrame+Vector3.new(0,0.7,0))
+                                            network:FireServer("UpdateProperty", Dough, "Anchored", true)
+                                            
+                                            while (o.Door.Bottom.CFrame.UpVector.X == -1) do
+                                                interests(LocalPlayer.Character.HumanoidRootPart, o.Bottom)
+                                            end
+                                            --network:FireServer("UpdateProperty", Dough, "Anchored", false)
+
+                                            Dough:SetAttribute("Id", data.Id)
+                                            table.insert(CookingPizzas, data.Id)
+                                            -- Dough:GetPropertyChangedSignal("Parent"):Connect(function()
+                                            -- 	if Dough.Parent == nil then
+                                            -- 		table.remove(CookingPizzas, table.find(CookingPizzas, Dough:GetAttribute("Id")))
+                                            -- 		print("Id Removido  " .. Dough:GetAttribute("Id"))
+                                            -- 	end
+                                            -- end)
+                                        end
+                                    end
+                                    oldp = data.Id
+                                end
+                            end
+                        end
+                    end
+                end
+                    if list then
+                        for _,data in ipairs(list.AllOrders) do
+                            if data.Object ~= nil and data.Object.Name == "Orders" and data.Order == "MountainDew" and not table.find(tabledew, data.Id) and workspace.AllMountainDew:FindFirstChild("MountainDew") then
+                                table.insert(tabledew, data.Id)
+                                local md = workspace.AllMountainDew:FindFirstChild("MountainDew")
+                                md.Name = "1"
+                                task.spawn(function()
+                                    task.wait(7)
+                                    while md.Parent == workspace.AllMountainDew do task.wait()
+                                        network:FireServer("UpdateProperty", md, "CFrame", CFrame.new(math.random(56,57),4.1,38))
+                                    end
+                                end)
+                            end
+                        end
+                    end
+                end
+            ishere = false
+        end
+    end
+end)
+local pack_on = true
+function OpenBox()
+    Box = workspace.AllBox:FindFirstChild("BoxOpen")
+    if Box then
+        Box.Name = "Box"
+        return Box
+    else
+        return false
+    end
+end
+
+function GetBoxing()
+    Pizza = workspace.BoxingRoom:FindFirstChild("Pizza")
+    if Pizza then
+        Pizza.Name = "Pizza1"
+        return Pizza
+    else
+        return false
+    end
+end
+
+function GetBox()
+    for _,Box in pairs(workspace.AllBox:GetChildren()) do
+        if Box.Name == "BoxOpen" and not Box.Pizza.Value then
+            return Box
+        end
+    end
+end
+
+function GetPizza()
+    for _,Pizza in pairs(workspace.BoxingRoom:GetChildren()) do
+        if Pizza.Name == "Pizza" then
+            return Pizza
+        end
+    end
+end
+
+
+while Farm do task.wait(.9)
+    if doCaixa then
+        game.Players.LocalPlayer.SimulationRadius = 99999999999
+        for i,v in pairs(workspace.Customers:GetChildren()) do
+
+            if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Head") and v.Head:FindFirstChild("Dialog") and v.Head.Dialog:FindFirstChild("Correct") then
+                local pizza = "MountainDew"
+                
+                local dialog = v.Head.Dialog.Correct.ResponseDialog or ''
+        
+                if dialog:sub(-8)=="instead." then
+                    dialog = dialog:sub(-30)
+                end
+        
+                if dialog:find("pepperoni",1,true) then
+                    pizza = "PepperoniPizza"
+                elseif dialog:find("sausage",1,true) then
+                    pizza = "SausagePizza"
+                elseif dialog:find("cheese",1,true) then
+                    pizza = "CheesePizza"
+                end
+        
+                if not v:FindFirstChild("Humanoid").Sit then
+                    if (root.Position-Vector3.new(23.84, 6.59, 147.69)).magnitude>9 then TP(CFrame.new(23.84, 6.59, 147.69)) task.wait(.1) end
+                    network:FireServer("OrderComplete", v, pizza, workspace.Register2)
+                    
+                elseif v:FindFirstChild("Humanoid").Sit then
+                    if (root.Position-Vector3.new(23.84, 6.59, 147.69)).magnitude>9 then TP(CFrame.new(23.84, 6.59, 147.69)) task.wait(.1) end
+                    network:FireServer("OrderComplete", v, pizza, workspace.Register3)
+                end
+            elseif v:FindFirstChild("Humanoid") and not v.Humanoid.Sit and AndarV or Teleport_LentoV then
+                TP("Cashier", CFrame.new(23.84, 6.59, 147.69))
+            end
+        end
+        if not withoutFloor then
+            withoutFloor = true
+            for _,Floor in pairs(Floors) do
+                Floor.CanCollide = false
+                Floor.Transparency = 1
+            end
+        end
+    else
+        if withoutFloor then
+            withoutFloor = false
+            for _,Floor in pairs(Floors) do
+                Floor.CanCollide = true
+                Floor.Transparency = 0
+            end
+        end
+    end
+
+    -- if doCozinha then
+        
+    -- end
+
+    if doEmpacotador then
+        local Tool = workspace:FindFirstChild("Tool")
+        if Tool and Tool:FindFirstChild("House") then
+            network:FireServer("AddPizzaToBackpack", Tool)
+        end
+        task.spawn(function()
+            local dew = workspace.BoxingRoom:FindFirstChild("Dew")
+            if dew then
+                network:FireServer("UpdateProperty", dew, "CFrame", CFrame.new(63,4.9,-1,-1,0,0,0,1,0,0,0,-1))
+            end
+        end)
+        if workspace.Drawer:FindFirstChild("Pizza Slicer") then
+            workspace.Drawer["Pizza Slicer"].ClickDetector.Detector:FireServer()
+        elseif not root.Parent:FindFirstChild("Pizza Slicer") and game.Players.LocalPlayer.Backpack:FindFirstChild("Pizza Slicer") then
+            game.Players.LocalPlayer.Backpack:FindFirstChild("Pizza Slicer").Parent = root.Parent
+        end
+
+        if not workspace.AllBox:FindFirstChild("BoxOpen") then
+            for _,Box in pairs(workspace.AllBox:GetChildren()) do
+                if (root.Position-Vector3.new(62.74, 6.59, 9.48)).magnitude>9 then  TP(CFrame.new(62.74, 6.59, 9.48)) continue end
+                network:FireServer("OpenBox", Box)
+            end
+        else
+            local Pizza = GetPizza()
+            local Box = GetBox()
+        
+            if Pizza and Box then
+                if (root.Position-Vector3.new(62.74, 6.59, 9.48)).magnitude>9 then  TP(CFrame.new(62.74, 6.59, 9.48)) continue end
+                network:FireServer("AssignPizzaToBox", Box, Pizza)
+                network:FireServer("SlicePizza", Box, math.random(10000,40081))
+                network:FireServer("CloseBox", Box)
+                task.wait(.15)
+                for _,Box in pairs(workspace.AllBox:GetChildren()) do
+                    if Box.Name == "BoxClosed" and Box:FindFirstChild("HasPizzaInside").Value then
+                       
+                        for i = 1,2 do task.wait()
+                            network:FireServer("UpdateProperty", Box, "CFrame", CFrame.new(68.2,4.4,math.random(-3,-2),-1,0,0,0,1,0,0,0,-1))
+                        end
+                        break
+                    end
+                end
+            end
+        end
+    end
+    
+    if doEntregador then
+        function Touch(hum, part)
+            local Touch_Part = part
+            local cf = Touch_Part.CFrame
+            local size = Touch_Part.Size
+            local tr = Touch_Part.Transparency
+            Touch_Part.Transparency = 0
+            Touch_Part.CanCollide = false
+            Touch_Part.Size = Vector3.new(0,0,0) 
+            Touch_Part.CFrame = hum.CFrame
+            task.wait()
+            Touch_Part.CFrame = cf
+            Touch_Part.CanCollide = false
+            Touch_Part.CFrame = CFrame.new(Vector3.new(0,-3,0))
+            Touch_Part.Size =  Vector3.new(0,0,0)
+            Touch_Part.Transparency = 0
+        end
+        
+        if not game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool") then
+
+           for _, pack in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+                if pack and pack:FindFirstChild("House") then
+                    local House = workspace.Houses[tostring(pack.House.Value)]
+                    local GivePart = House[tostring(House.CurrentUpgrade.Value)].GivePizza 
+                    local Knob = House[tostring(House.CurrentUpgrade.Value)].Doors.FrontDoorMain.Door_Open.Knob
+                    local time = tick()
+                    root.CFrame = CFrame.new(Knob.Position)
+                    pack.Parent = game.Players.LocalPlayer.Character
+                    task.wait()
+                    while pack and pack.Parent and pack.Parent.Name == game.Players.LocalPlayer.Character.Name do 
+                        task.wait()
+                        if (tick()-time) >= 6 then 
+                            for i,v in pairs(root.Parent:GetChildren()) do
+                                if v:IsA("Tool") then
+                                    root.Parent.Humanoid:UnequipTools(v)
+                                end
+                            end
+                            break
+                        end
+                        Touch(game.Players.LocalPlayer.Character:FindFirstChildOfClass("Part"), GivePart)
+                    end
+                end
+            end
+        elseif game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool") then
+            while game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool") do task.wait()
+                for i,v in pairs(root.Parent:GetChildren()) do
+                    if v:IsA("Tool") and v:FindFirstChild("Handle") and v.Handle.Material.Name == "Neon" then
+                        root.Parent.Humanoid:UnequipTools(v)
+                    end
+                end
+            end
+        end
+
+        for _,Players_Boxer in pairs(game.Teams["Pizza Boxer"]:GetPlayers()) do
+            for _,Tools in pairs(Players_Boxer.Backpack:GetChildren()) do
+                if Tools:FindFirstChild("House") then task.wait(.10)
+                    network:FireServer("AddPizzaToBackpack", Tools)
+                end
+            end
+        end
+    end
+
+    if doFornecedor then
+        local refill = false
+		for _,v in pairs(supplyCounts) do
+			if (v <= refill_at) then
+				refill = true
+				bool1 = true
+				break
+			end
+		end 
+		if refill  then
+			--if (root.Position.Z - -1053.5) >= 985 then 
+				--TP(CFrame.new(39.89810562133789, 6.998365879058838, -836.3509521484375))
+				task.wait(2)
+				TP(CFrame.new(7, 13, -1022))
+			--end
+			while doFornecedor do task.wait(1)
+				for _,btns in ipairs(supplyButtons) do
+					local s = bcolorToSupply[btns.BrickColor.Name]
+					if supplyCounts[s] == nil then continue end
+					if supplyCounts[s] < tonumber(refill_end) then
+						btns.CanCollide = false
+							
+							--if s == "Dew" or s == "Pepperoni" or s == "Sausage" and supplyCounts[s] < tonumber(tonumber(ID_2.Text)) then
+								testt = {CFrame.new(14.15, 12.99, -1049.25), CFrame.new(0.74, 12.99, -1049.67)}
+								TP(testt[math.random(1,2)])
+							--else
+								--TP(CFrame.new(0.74, 12.99, -1049.67))
+							--end
+							--root.Parent:FindFirstChild("Humanoid"):MoveTo(Vector3.new(5.742875576019287, 12.99802303314209, -1039.0045166015625))
+						task.spawn(function()
+							while doFornecedor and refill and supplyCounts[s] < refill_end do task.wait() interests(root, btns) end
+						end)
+						task.spawn(function()
+							--while doFornecedor do task.wait(1)
+								for _,box in pairs(game:GetService("Workspace").AllSupplyBoxes:GetChildren()) do task.wait(.20)
+									--interests(box, workspace["SupplyLift"])
+										local args = {
+										[1] = box,
+										[2] = "CFrame",
+										[3] = SupplyLift[math.random(1,2)].CFrame
+										}
+										network:FireServer("UpdateProperty", unpack(args))
+								end
+							--end
+						end)
+							-- if s == "Dew" then
+							-- 	move(Vector3.new(0.8, 12, -1053.5))
+							-- 	while doFornecedor and refill and supplyCounts[s] < tonumber(tonumber(refill_end)) do task.wait() interest(root, btns) end
+							-- elseif s == "Sausage" then
+							-- 	move(Vector3.new(-3.2, 12, -1045.5))
+							-- 	while doFornecedor and refill and supplyCounts[s] < tonumber(tonumber(refill_end)) do task.wait() interest(root, btns) end
+							-- elseif s == "Pepperoni" then
+							-- 	move(Vector3.new(3.8, 12, -1045.5))
+							-- 	while doFornecedor and refill and supplyCounts[s] < tonumber(tonumber(refill_end)) do task.wait() interest(root, btns) end
+							-- elseif s == "TomatoSauce" then
+							-- 	move(Vector3.new(17.6, 12, -1045.5))
+							-- 	while doFornecedor and refill and supplyCounts[s] < tonumber(tonumber(refill_end)) do task.wait() interest(root, btns) end
+							-- elseif s == "Cheese" then
+							-- 	move(Vector3.new(11.15, 12, -1045.3))
+							-- 	while doFornecedor and refill and supplyCounts[s] < tonumber(tonumber(refill_end)) do task.wait() interest(root, btns) end
+							-- elseif s == "Box" then
+							-- 	move(Vector3.new(13.7, 12, -1053.4))
+							-- 	while doFornecedor and refill and supplyCounts[s] < tonumber(tonumber(refill_end)) do task.wait() interest(root, btns) end
+							-- elseif s == "Dough" then
+							-- 	move(Vector3.new(7.35, 12, -1053.4))
+							-- 	while doFornecedor and refill and supplyCounts[s] < tonumber(tonumber(refill_end)) do task.wait() interest(root, btns) end
+							-- end
+						--task.spawn(function() 
+							
+						--end)
+					end
+				end
+				if supplyCounts.TomatoSauce >= tonumber(refill_end) and supplyCounts.Cheese >= tonumber(refill_end) and supplyCounts.Sausage >= tonumber(refill_end) and supplyCounts.Pepperoni >= tonumber(refill_end) and supplyCounts.Dough >= tonumber(refill_end) and supplyCounts.Box >= tonumber(refill_end) and supplyCounts.Dew >= tonumber(refill_end) then
+					task.wait(2)
+					for _,box in pairs(game:GetService("Workspace").AllSupplyBoxes:GetChildren()) do task.wait(.20)
+						--interests(box, workspace["SupplyLift"])
+							local args = {
+							[1] = box,
+							[2] = "CFrame",
+							[3] = CFrame.new(0,-459,0)
+							}
+							network:FireServer("UpdateProperty", unpack(args))
+					end
+					--move(Vector3.new(7, 13, -1022))
+					task.wait(2)
+					break
+				end
+			end
+		end
+    end
+
+end
