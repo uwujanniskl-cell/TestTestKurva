@@ -472,33 +472,6 @@ if isWhitelisted(player.Name) then
     local Section = Tab:CreateSection("Extra.")
 
     Tab:CreateButton({
-       Name = "DarkGodz31 (2022 Project) Candy Farm. 🍬",
-       Callback = function()
-           getgenv().AutoCandy = true
-           while AutoCandy == true do wait()
-               local Players = game:GetService("Players")
-               local LocalPlayer = Players.LocalPlayer
-               local Character = LocalPlayer.Character
-
-               if not Character:FindFirstChild("CandyBucket") then
-                   Character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild("CandyBucket"))
-               end
-
-               for _, Houses in pairs(workspace.Houses:GetChildren()) do task.wait(.20)
-                   local Give = Houses[tostring(Houses.CurrentUpgrade.Value)].GivePizza
-                   local DoorTouch = Houses[tostring(Houses.CurrentUpgrade.Value)].Doors.FrontDoorMain.DoorTouch
-
-                   for loop = 1,4 do task.wait(1) Character.HumanoidRootPart.CFrame = Give.CFrame end
-
-                   task.wait(1)
-
-                   while DoorTouch.CanCollide == true do task.wait() end
-               end
-           end
-       end,
-    })
-
-    Tab:CreateButton({
        Name = "silent.999 (2025 Project) Party Inviter Farm. 🥳",
        Callback = function()
            while true do 
