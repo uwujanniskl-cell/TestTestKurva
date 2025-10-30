@@ -1,0 +1,80 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Corpse's Private Halloween GUI 🍕.",
+    Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+    LoadingTitle = "Private Pizza GUI.",
+    LoadingSubtitle = "by Corpse.",
+    Theme = "AmberGlow", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+ 
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+ 
+    ConfigurationSaving = {
+       Enabled = true,
+       FolderName = nil, -- Create a custom folder for your hub/game
+       FileName = "Big Hub"
+    },
+ 
+    Discord = {
+       Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
+       Invite = "", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
+       RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+    },
+ 
+    KeySystem = false, -- Set this to true to use our key system
+    KeySettings = {
+       Title = "Untitled",
+       Subtitle = "Key System",
+       Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
+       FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+       SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+       GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+       Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+    }
+ })
+
+local Tab = Window:CreateTab("1.", "rewind")
+local Section = Tab:CreateSection("Clarify.")
+
+local Button = Tab:CreateButton({
+   Name = "Press before Using Candy Farm.",
+   Callback = function()
+   local title = "READ."
+           local text = "To Clarify Yes i know, this look's detected but it's really not don't worry."
+           local answer1 = "Ok."
+           workspace.MessageService.Dialog.Dialog:Fire(title, text, answer1, nil, true, true)
+   end,
+})
+
+
+local Section = Tab:CreateSection("Main.")
+
+
+local Button = Tab:CreateButton({
+   Name = "Candy Farm. 🍬",
+   Callback = function()
+              getgenv().AutoCandy = true
+           while AutoCandy == true do wait()
+               local Players = game:GetService("Players")
+               local LocalPlayer = Players.LocalPlayer
+               local Character = LocalPlayer.Character
+
+               if not Character:FindFirstChild("CandyBucket") then
+                   Character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild("CandyBucket"))
+               end
+
+               for _, Houses in pairs(workspace.Houses:GetChildren()) do task.wait(.20)
+                   local Give = Houses[tostring(Houses.CurrentUpgrade.Value)].GivePizza
+                   local DoorTouch = Houses[tostring(Houses.CurrentUpgrade.Value)].Doors.FrontDoorMain.DoorTouch
+
+                   for loop = 1,4 do task.wait(1) Character.HumanoidRootPart.CFrame = Give.CFrame end
+
+                   task.wait(1)
+
+                   while DoorTouch.CanCollide == true do task.wait() end
+               end
+           end
+   end,
+})
+
