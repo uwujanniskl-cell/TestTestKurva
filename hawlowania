@@ -87,3 +87,34 @@ local Button = Tab:CreateButton({
    end,
 })
 
+    Tab:CreateButton({
+       Name = "Performance Script.",
+       Callback = function()
+
+        task.spawn(function()
+            setfpscap(40)
+        end)
+
+           task.spawn(function()
+               if not workspace:FindFirstChild("CDough") then
+                   getgenv().Folder = Instance.new("Folder", workspace)
+                   Folder.Name = "CDough"
+               end
+               for i,v in pairs(workspace:GetDescendants()) do
+                   if v:IsA("Part") then
+                       v.Transparency = 1
+                   elseif v:IsA("Part") and (v.Name == "Street" or v.Name == "Floor" or v.Name == "BasePlate" or v.Name == "Street2") then
+                       v.Transparency = 0
+                   end
+               end
+               for i = 1, 3 do
+                   task.wait(1)
+                   for _, Jobs in pairs(workspace.JobButtons:GetChildren()) do
+                       if Jobs:IsA("Part") then
+                           Jobs.Position = Vector3.new(Jobs.Position.X, -3, Jobs.Position.Z)
+                       end
+                   end
+               end
+           end) 
+       end,
+    })
