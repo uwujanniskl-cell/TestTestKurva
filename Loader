@@ -1,0 +1,143 @@
+--[=[
+Responsive GUI with Smooth Slide & Fade Animation + Button Functionality
+Updated by GPT-5-mini
+]=]
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+local playerGui = game:GetService("CoreGui")
+
+-- // ScreenGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "UniversalGUI"
+gui.IgnoreGuiInset = true
+gui.ResetOnSpawn = false
+gui.DisplayOrder = 1000
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = playerGui
+
+-- // Main Frame
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Parent = gui
+frame.BackgroundColor3 = Color3.fromRGB(110, 56, 0)
+frame.BorderSizePixel = 0
+frame.Size = UDim2.new(0.4, 0, 0.35, 0)
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+-- Start off-screen for animation
+frame.Position = UDim2.new(0.5, 0, -0.5, 0)
+frame.BackgroundTransparency = 1 -- Start fully transparent for fade-in
+
+Instance.new("UICorner", frame)
+local stroke = Instance.new("UIStroke", frame)
+stroke.Thickness = 3
+stroke.Color = Color3.fromRGB(17, 17, 17)
+
+local aspect = Instance.new("UIAspectRatioConstraint", frame)
+aspect.AspectRatio = 1.9
+
+local uiScale = Instance.new("UIScale", frame)
+uiScale.Scale = 1
+local function adjustScale()
+	local screenSize = workspace.CurrentCamera.ViewportSize
+	if screenSize.X < 900 then
+		uiScale.Scale = 0.8
+	elseif screenSize.X > 1800 then
+		uiScale.Scale = 1.2
+	else
+		uiScale.Scale = 1
+	end
+end
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(adjustScale)
+adjustScale()
+
+-- // Images
+local function makeImage(name, imageId, position, size)
+	local img = Instance.new("ImageLabel")
+	img.Name = name
+	img.Parent = frame
+	img.BackgroundTransparency = 1
+	img.Image = imageId
+	img.Position = position
+	img.Size = size
+	return img
+end
+
+makeImage("LeftImage", "rbxassetid://126785882597521", UDim2.new(0,0,0,0), UDim2.new(0.5,0,1,0))
+makeImage("RightImage", "rbxassetid://139037429029676", UDim2.new(0.5,0,0,0), UDim2.new(0.5,0,1,0))
+
+-- // Buttons
+local function makeButton(name, text, position)
+	local btn = Instance.new("TextButton")
+	btn.Name = name
+	btn.Parent = frame
+	btn.BackgroundColor3 = Color3.fromRGB(136, 46, 0)
+	btn.Size = UDim2.new(0.25,0,0.18,0)
+	btn.Position = position
+	btn.Text = text
+	btn.TextScaled = true
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	btn.Font = Enum.Font.SourceSansBold
+	Instance.new("UICorner", btn)
+	local s = Instance.new("UIStroke", btn)
+	s.Thickness = 2
+	return btn
+end
+
+local mainButton = makeButton("MainButton", "Main GUI.", UDim2.new(0.13992, 0, 0.40079, 0))
+local halloweenButton = makeButton("HalloweenButton", "Halloween GUI.", UDim2.new(0.56996, 0, 0.40079, 0))
+
+-- // Text Labels
+local function makeLabel(name, text, position, size, color)
+	local lbl = Instance.new("TextLabel")
+	lbl.Name = name
+	lbl.Parent = frame
+	lbl.Text = text
+	lbl.Position = position
+	lbl.Size = size
+	lbl.TextScaled = true
+	lbl.TextColor3 = color or Color3.fromRGB(0,0,0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = Enum.Font.SourceSans
+	return lbl
+end
+
+makeLabel("TitleLabel", "Pizza Place Private Stuff (Sigma)", UDim2.new(0,0,0,0), UDim2.new(1,0,0.1,0), Color3.fromRGB(171,86,0))
+makeLabel("AuthorLabel", "Basic UI : corpsec", UDim2.new(0.75309,0,0.88095,0), UDim2.new(0.25,0,0.1,0), Color3.fromRGB(171,86,0))
+makeLabel("FarmLabel", "(Farm)", UDim2.new(0.16049,0,0.59921,0), UDim2.new(0.2,0,0.08,0))
+makeLabel("CandyLabel", "(Candy Stuff)", UDim2.new(0.59053,0,0.59921,0), UDim2.new(0.25,0,0.08,0))
+
+-- // Tween for slide + fade-in
+local tweenInfoIn = TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local tweenIn = TweenService:Create(frame, tweenInfoIn, {Position = UDim2.new(0.5,0,0.5,0), BackgroundTransparency = 0})
+tweenIn:Play()
+
+-- // Load another GUI with smooth fade-out
+local function loadGUI(url)
+	local tweenInfoOut = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	local tweenOut = TweenService:Create(frame, tweenInfoOut, {BackgroundTransparency = 1, Position = UDim2.new(0.5,0,1.5,0)})
+	tweenOut:Play()
+	tweenOut.Completed:Connect(function()
+		local success, err = pcall(function()
+			loadstring(game:HttpGet(url))()
+		end)
+		if not success then
+			warn("Failed to load GUI:", err)
+		end
+		gui:Destroy()
+	end)
+end
+
+-- // Button connections
+mainButton.MouseButton1Click:Connect(function()
+	game:GetService("CoreGui").UniversalGUI:destroy()
+	loadstring(game:HttpGet('https://raw.githubusercontent.com/dgtjdgdfts/Fighting-Demons/refs/heads/main/Testas4'))() -- Replace
+end)
+
+halloweenButton.MouseButton1Click:Connect(function()
+	game:GetService("CoreGui").UniversalGUI:destroy()
+	loadstring(game:HttpGet('https://raw.githubusercontent.com/dgtjdgdfts/Fighting-Demons/refs/heads/main/halowannia'))()  -- Replace
+end)
+
+return gui
