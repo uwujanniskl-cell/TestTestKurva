@@ -433,7 +433,7 @@ local Toggle = Tab:CreateToggle({
 })
 
 local player = game.Players.LocalPlayer
-local Whitelist = { "wavyy_bases", "CorpseDHC", "LookMeIn2017", "DevWithLua", "shadowistheone", "leland28ys", "OB_SpM", "Djrocks54", "DevelopedWithLua", "arabexclusive298", "UnclesWhisperStick", "GrampsRustyHalo", "DadsMagicConch", "SomeoneBetweenLegs", "Vitchynala", "Vitchynala", "JustFru0", "Mrsnickerrs", "DikayaPanteraa", "Kurox950", "ArtemisFowl11uf", "DEATH_N1CK", "Shadowistheone", "stupid58v1", "banditiam2017"  }
+local Whitelist = { "wavyy_bases", "CorpseDHC", "LookMeIn2017", "DevWithLua", "shadowistheone", "leland28ys", "OB_SpM", "Djrocks54", "DevelopedWithLua", "arabexclusive298", "UnclesWhisperStick", "GrampsRustyHalo", "DadsMagicConch", "SomeoneBetweenLegs", "Vitchynala", "Vitchynala", "JustFru0", "Mrsnickerrs", "" }
 local function isWhitelisted(name)
     for _, user in ipairs(Whitelist) do
         if user:lower() == name:lower() then
@@ -470,6 +470,33 @@ if isWhitelisted(player.Name) then
     })
 
     local Section = Tab:CreateSection("Extra.")
+
+    Tab:CreateButton({
+       Name = "DarkGodz31 (2022 Project) Candy Farm. 🍬",
+       Callback = function()
+           getgenv().AutoCandy = true
+           while AutoCandy == true do wait()
+               local Players = game:GetService("Players")
+               local LocalPlayer = Players.LocalPlayer
+               local Character = LocalPlayer.Character
+
+               if not Character:FindFirstChild("CandyBucket") then
+                   Character.Humanoid:EquipTool(LocalPlayer.Backpack:FindFirstChild("CandyBucket"))
+               end
+
+               for _, Houses in pairs(workspace.Houses:GetChildren()) do task.wait(.20)
+                   local Give = Houses[tostring(Houses.CurrentUpgrade.Value)].GivePizza
+                   local DoorTouch = Houses[tostring(Houses.CurrentUpgrade.Value)].Doors.FrontDoorMain.DoorTouch
+
+                   for loop = 1,4 do task.wait(1) Character.HumanoidRootPart.CFrame = Give.CFrame end
+
+                   task.wait(1)
+
+                   while DoorTouch.CanCollide == true do task.wait() end
+               end
+           end
+       end,
+    })
 
     Tab:CreateButton({
        Name = "silent.999 (2025 Project) Party Inviter Farm. 🥳",
@@ -550,9 +577,9 @@ else
 end
 
     Tab:CreateButton({
-       Name = "corpsec/polo (2022-2023 Project) Delivery 1. 👾",
+       Name = "corpsec/Nat (2022-2023 Project) Delivery 2. 👾",
        Callback = function()
-           loadstring(game:HttpGet('https://raw.githubusercontent.com/dgtjdgdfts/Fighting-Demons/refs/heads/main/Testas3'))() 
+           loadstring(game:HttpGet('https://raw.githubusercontent.com/Corpsecc/Secret/refs/heads/main/a'))() 
        end,
     })
 
@@ -999,57 +1026,66 @@ local Toggle = Tab:CreateToggle({
  local Tab = Window:CreateTab("Present's.", "rewind")
 local Section = Tab:CreateSection("Misc.")
 
- local running = false
+local Dropdown = Tab:CreateDropdown({
+   Name = "Select Presents",
+   Options = {"None", "Gear Present", "Normal Present", "Movie Present", "Fall Present", "Halloween Present", "Thanksgiving Present", "Christmas Present"},
+   CurrentOption = "None",
+   Callback = function(option)
+      if option[1] == "None" then
+         getgenv().SelectedPresent = nil
+      else
+         getgenv().SelectedPresent = option[1]
+         Rayfield:Notify({
+            Title = "Present Selected",
+            Content = "Selected: " .. option[1],
+            Duration = 2,
+         })
+      end
+   end,
+})
 
 local Toggle = Tab:CreateToggle({
-    Name = "Auto Buy Present V2 (Good).",
-    CurrentValue = false,
-    Flag = "Furniture Present",
-    Callback = function(Value)
-        running = Value
-        if running then
-            task.spawn(function()
-                while running do
-                    local VirtualInputManager = game:GetService("VirtualInputManager")
-                    workspace:WaitForChild("PresentTable"):WaitForChild("Presents"):WaitForChild("Normal"):WaitForChild("ClickDetector"):WaitForChild("Detector"):FireServer()
-                    task.wait(.086)
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.BackSlash, false, game)  -- key down
-                    task.wait()
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.BackSlash, false, game)  -- key down
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)  -- key down
-                    task.wait()
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)  -- key down
+   Name = "Buy Present",
+   CurrentValue = false,
+   Flag = "ToggleLoopBuyPresents",
+   Callback = function(Value)
+      getgenv().LoopBuyPresents = Value
+
+if Value then
+    task.spawn(function()
+        while getgenv().LoopBuyPresents do
+            pcall(function()
+                local selected = getgenv().SelectedPresent
+                if not selected or selected == "None" then return end
+
+                local presentType
+                if selected == "Normal Present" then
+                    presentType = "Normal"
+                elseif selected == "Gear Present" then
+                    presentType = "Gear"
+                elseif selected == "Movie Present" then
+                    presentType = "Movie"
+                elseif selected == "Fall Present" then
+                    presentType = "Fall"
+                elseif selected == "Halloween Present" then
+                    presentType = "Halloween"
+                elseif selected == "Thanksgiving Present" then
+                    presentType = "Thanksgiving"
+                elseif selected == "Christmas Present" then
+                    presentType = "Christmas"
+                end
+
+                if presentType then
+                    local BuyPresentCoins = workspace.Main:WaitForChild("BuyPresentCoins")
+                    BuyPresentCoins:InvokeServer(nil, presentType)
                 end
             end)
+            task.wait()
         end
-    end,
-})
-local remote = game:GetService("ReplicatedStorage"):WaitForChild("PlayerChannel")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local running = false
-
-local function sellAllWrappedItems()
-    local backpack = LocalPlayer:WaitForChild("Backpack")
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local humanoid = character:WaitForChild("Humanoid")
-
-    for _, tool in pairs(backpack:GetChildren()) do
-        if tool.Name == "Normal" and tool:FindFirstChild("Rarity") then
-            if tool:FindFirstChild("PresentCamera") then
-                tool.PresentCamera.Disabled = true
-            end
-            local id = tool:FindFirstChild("RewardAssetId") and tool.RewardAssetId.Value
-            if id then
-                humanoid:EquipTool(tool)
-                remote:FireServer("PutUnwrappedItemInInventory", id)
-                remote:FireServer("SellInventoryItem", id)
-                tool:Destroy()
-            end
-        end
-    end
+    end)
 end
+   end,
+})
 
 local function autoSellLoop()
     while running do
@@ -1093,59 +1129,90 @@ local Toggle = Tab:CreateToggle({
     end,
 })
 
-local ToggleMovie = Tab:CreateToggle({
-    Name = "Auto Buy Movie Present.",
-    CurrentValue = false,
-    Flag = "Movie Gift",
-    Callback = function(Value)
-        running = Value
-        if running then
-            task.spawn(function()
-                local VirtualInputManager = game:GetService("VirtualInputManager")
-                local present = workspace:WaitForChild("PresentTable"):WaitForChild("Presents"):WaitForChild("Movie")
-                local clickDetector = present:WaitForChild("ClickDetector"):WaitForChild("Detector")
+ local Button = Tab:CreateButton({
+    Name = "Auto Buy Present + Sell Instantly 2.",
+    Callback = function()
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local running = false
 
-                while running do
-                    clickDetector:FireServer()
-                    task.wait(0.086)
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.BackSlash, false, game)
-                    task.wait()
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.BackSlash, false, game)
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                    task.wait()
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                end
-            end)
+
+if game:GetService("CoreGui"):FindFirstChild("AutoBuy for Fru") then
+    game:GetService("CoreGui")["AutoBuy for Fru"]:Destroy()
+end
+
+local function sellAllWrappedItems()
+    local backpack = LocalPlayer:WaitForChild("Backpack")
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+
+    for _, v in pairs(backpack:GetChildren()) do
+        if v.Name == "Normal" and v:FindFirstChild("Rarity") then
+            if v:FindFirstChild("PresentCamera") then
+                v.PresentCamera.Disabled = true
+            end
+            local id = v:FindFirstChild("RewardAssetId") and v.RewardAssetId.Value
+            if id then
+                v.Parent = character
+                game:GetService("ReplicatedStorage"):WaitForChild("PlayerChannel"):FireServer("PutUnwrappedItemInInventory", id)
+                game:GetService("ReplicatedStorage"):WaitForChild("PlayerChannel"):FireServer("SellInventoryItem", id)
+                v:Destroy()
+            end
         end
-    end,
-})
+    end
+end
 
-local ToggleGear = Tab:CreateToggle({
-    Name = "Auto Buy Gear Present.",
-    CurrentValue = false,
-    Flag = "Gear Present",
-    Callback = function(Value)
-        running = Value
-        if running then
-            task.spawn(function()
-                local VirtualInputManager = game:GetService("VirtualInputManager")
-                local present = workspace:WaitForChild("PresentTable"):WaitForChild("Presents"):WaitForChild("Gear")
-                local clickDetector = present:WaitForChild("ClickDetector"):WaitForChild("Detector")
-
-                while running do
-                    clickDetector:FireServer()
-                    task.wait(0.086)
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.BackSlash, false, game)
-                    task.wait()
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.BackSlash, false, game)
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                    task.wait()
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                end
-            end)
+local function autoSellLoop()
+    while running do
+        local backpack = LocalPlayer:WaitForChild("Backpack")
+        local normalCount = 0
+        for _, item in pairs(backpack:GetChildren()) do
+            if item.Name == "Normal" then
+                normalCount = normalCount + 1
+            end
         end
+        if normalCount > 5 then
+            sellAllWrappedItems()
+        end
+        task.wait(1)
+    end
+end
+
+local function autoBuyLoop()
+    while running do
+        workspace.PresentTable.Presents.Normal.ClickDetector.Detector:FireServer()
+        task.wait()
+        local Buy = LocalPlayer.PlayerGui.Gui.BuyPresent.Body.Buttons.Buy
+        if Buy and Buy:IsA("TextButton") and getconnections then
+            for _, connection in pairs(getconnections(Buy.MouseButton1Click)) do
+                connection.Function()
+            end
+        end
+    end
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.Name = "AutoBuy for Fru"
+
+local Toggle = Instance.new("TextButton")
+Toggle.Size = UDim2.new(0, 150, 0, 50)
+Toggle.Position = UDim2.new(0, 10, 1, -60)
+Toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+Toggle.Text = "Buy+Sell: OFF"
+Toggle.Parent = ScreenGui
+
+Toggle.MouseButton1Click:Connect(function()
+    running = not running
+    Toggle.Text = "Buy+Sell: " .. (running and "ON" or "OFF")
+    if running then
+        task.spawn(autoBuyLoop)
+        task.spawn(autoSellLoop)
+    end
+end)
     end,
-})
+ })
 
 local Section = Tab:CreateSection("Event Present's.")
 
