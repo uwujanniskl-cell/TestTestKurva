@@ -433,7 +433,7 @@ local Toggle = Tab:CreateToggle({
 })
 
 local player = game.Players.LocalPlayer
-local Whitelist = { "wavyy_bases", "CorpseDHC", "LookMeIn2017", "DevWithLua", "shadowistheone", "leland28ys", "OB_SpM", "Djrocks54", "DevelopedWithLua", "arabexclusive298", "UnclesWhisperStick", "GrampsRustyHalo", "DadsMagicConch", "SomeoneBetweenLegs", "Vitchynala", "Vitchynala", "JustFru0", "Mrsnickerrs", "Kurox950", "DikayaPanteraa" }
+local Whitelist = { "wavyy_bases", "CorpseDHC", "LookMeIn2017", "DevWithLua", "shadowistheone", "leland28ys", "OB_SpM", "Djrocks54", "DevelopedWithLua", "arabexclusive298", "UnclesWhisperStick", "GrampsRustyHalo", "DadsMagicConch", "SomeoneBetweenLegs", "Vitchynala", "Vitchynala", "JustFru0", "Mrsnickerrs", "Kurox950", "DikayaPanteraa", "Djrocks54" }
 local function isWhitelisted(name)
     for _, user in ipairs(Whitelist) do
         if user:lower() == name:lower() then
