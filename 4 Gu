@@ -432,8 +432,32 @@ local Toggle = Tab:CreateToggle({
    end,
 })
 
-local player = game.Players.LocalPlayer
-local Whitelist = { "wavyy_bases", "CorpseDHC", "LookMeIn2017", "DevWithLua", "shadowistheone", "leland28ys", "OB_SpM", "Djrocks54", "DevelopedWithLua", "arabexclusive298", "UnclesWhisperStick", "GrampsRustyHalo", "DadsMagicConch", "SomeoneBetweenLegs", "Vitchynala", "Vitchynala", "JustFru0", "Mrsnickerrs", "Kurox950", "DikayaPanteraa", "Djrocks54" }
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+ -- Whitelist System.
+ 
+local Whitelist = {
+    "wavyy_bases",
+    "CorpseDHC",
+    "LookMeIn2017",
+    "DevWithLua",
+    "shadowistheone",
+    "leland28ys",
+    "OB_SpM",
+    "Djrocks54",
+    "DevelopedWithLua",
+    "arabexclusive298",
+    "UnclesWhisperStick",
+    "GrampsRustyHalo",
+    "DadsMagicConch",
+    "SomeoneBetweenLegs",
+    "Vitchynala",
+    "JustFru0",
+    "Mrsnickerrs",
+    "Kurox950",
+    "DikayaPanteraa"
+}
 
 local function isWhitelisted(name)
     for _, user in ipairs(Whitelist) do
