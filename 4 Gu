@@ -433,7 +433,8 @@ local Toggle = Tab:CreateToggle({
 })
 
 local player = game.Players.LocalPlayer
-local Whitelist = { "wavyy_bases", "CorpseDHC", "LookMeIn2017", "DevWithLua", "shadowistheone", "leland28ys", "OB_SpM", "Djrocks54", "DevelopedWithLua", "arabexclusive298", "UnclesWhisperStick", "GrampsRustyHalo", "DadsMagicConch", "SomeoneBetweenLegs", "Vitchynala", "Vitchynala", "JustFru0", "Mrsnickerrs", "Kurox950", "DikayaPanteraa", "Djrocks54", "DEATH_N1CK", "ArtemisFowl11uf" }
+local Whitelist = { "wavyy_bases", "CorpseDHC", "LookMeIn2017", "DevWithLua", "shadowistheone", "leland28ys", "OB_SpM", "Djrocks54", "DevelopedWithLua", "arabexclusive298", "UnclesWhisperStick", "GrampsRustyHalo", "DadsMagicConch", "SomeoneBetweenLegs", "Vitchynala", "Vitchynala", "JustFru0", "Mrsnickerrs", "Kurox950", "DikayaPanteraa", "Djrocks54" }
+
 local function isWhitelisted(name)
     for _, user in ipairs(Whitelist) do
         if user:lower() == name:lower() then
@@ -566,17 +567,6 @@ else
     local Section = Tab:CreateSection("Restricted Access")
 
     Tab:CreateButton({
-       Name = "Press.",
-       Callback = function()
-           local title = "Event Present."
-           local text = "Dm me for being whitelisted into farm tab."
-           local answer1 = "Ok."
-           workspace.MessageService.Dialog.Dialog:Fire(title, text, answer1, nil, true, true)
-       end,
-    })
-end
-
-    Tab:CreateButton({
        Name = "corpsec/Nat (2022-2023 Project) Delivery 2. 👾",
        Callback = function()
            loadstring(game:HttpGet('https://raw.githubusercontent.com/Corpsecc/Secret/refs/heads/main/a'))() 
@@ -592,6 +582,20 @@ end
            end
        end,
     })
+
+    Tab:CreateButton({
+       Name = "Press.",
+       Callback = function()
+           local title = "Event Present."
+           local text = "Dm me for being whitelisted into farm tab."
+           local answer1 = "Ok."
+           workspace.MessageService.Dialog.Dialog:Fire(title, text, answer1, nil, true, true)
+       end,
+    })
+
+end
+
+
 
 local Tab = Window:CreateTab("Trolling.", "rewind")
 local Section = Tab:CreateSection("Main Troll's.")
