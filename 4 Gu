@@ -456,7 +456,8 @@ local Whitelist = {
     "JustFru0",
     "Mrsnickerrs",
     "Kurox950",
-    "DikayaPanteraa"
+    "DikayaPanteraa",
+	"banditiam2017"
 }
 
 local function isWhitelisted(name)
