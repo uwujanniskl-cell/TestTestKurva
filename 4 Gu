@@ -121,6 +121,84 @@ for _, item in ipairs(carsFolder:GetChildren()) do
     item:Destroy()
 end
 
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+task.spawn(function()
+    character:WaitForChild("HumanoidRootPart")
+    local size = character:GetExtentsSize()
+
+    -- Platform 1 (original)
+    local cframe1 = CFrame.new(
+        48.5161629, 3.80013371, 112.588791,
+        -0.999803782, 7.88716221e-08, 0.0198089201,
+        7.8796603e-08, 1, -4.56750016e-09,
+        -0.0198089201, -3.00572833e-09, -0.999803782
+    )
+
+    -- Platform 2
+    local cframe2 = CFrame.new(
+        73.615097, 6.00004816, 88.1513062,
+        0.2303527, -4.06414742e-08, 0.973107219,
+        1.15324594e-08, 1, 3.90346919e-08,
+        -0.973107219, 2.23057239e-09, 0.2303527
+    )
+
+    -- Platform 3
+    local cframe3 = CFrame.new(
+        61.3234558, 6.00011492, 88.3804855,
+        -0.999991596, 4.28483418e-08, 0.00409949338,
+        4.27505995e-08, 1, -2.39296725e-08,
+        -0.00409949338, -2.37542146e-08, -0.999991596
+    )
+
+    -- Platform 4
+    local cframe4 = CFrame.new(
+        35.3081627, 3.50013256, 112.619507,
+        -0.999999523, 3.33550183e-08, 0.0009570517,
+        3.33722596e-08, 1, 1.8001078e-08,
+        -0.0009570517, 1.80330098e-08, -0.999999523
+    )
+
+    -- Platform 5
+    local cframe5 = CFrame.new(
+        35.814682, 6.00011492, 88.7390442,
+        -0.999803841, -9.19537797e-08, 0.0198057797,
+        -9.23927246e-08, 1, -2.12474252e-08,
+        -0.0198057797, -2.30731665e-08, -0.999803841
+    )
+
+    -- Platform 6
+    local cframe6 = CFrame.new(
+        63.809269, 3.50013256, 112.447258,
+        -0.999626935, 4.94957355e-08, -0.0273134895,
+        4.95483974e-08, 1, -1.25121402e-09,
+        0.0273134895, -2.60408672e-09, -0.999626935
+    )
+
+    -- Platform 7 (new one)
+    local cframe7 = CFrame.new(
+        48.6052055, 6.00011492, 88.495903,
+        -0.999991596, 9.26222512e-08, 0.0040987432,
+        9.24800219e-08, 1, -3.48913289e-08,
+        -0.0040987432, -3.45119844e-08, -0.999991596
+    )
+
+    local platforms = {cframe1, cframe2, cframe3, cframe4, cframe5, cframe6, cframe7}
+    
+    for i, cframe in ipairs(platforms) do
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(size.X, 0.2, size.Z)
+        part.Anchored = true
+        part.CanCollide = false
+        part.Color = Color3.fromRGB(0, 255, 0)
+        part.Material = Enum.Material.Neon
+        part.CFrame = cframe
+        part.Parent = workspace
+    end
+end)
+
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
@@ -1525,9 +1603,305 @@ local Toggle = Tab:CreateToggle({
     end,
 })
 
-local Button = Tab:CreateButton({
-   Name = "More Comming soon.",
-   Callback = function()
-   print("nigga i said more comming soon")
-   end,
+local Tab = Window:CreateTab("Legit Working.", "rewind")
+local Section = Tab:CreateSection("Cashiers.")
+
+    Tab:CreateButton({
+       Name = "For Main Registers.",
+       Callback = function()
+           local title = "--Main Registers--"
+           local text = "Walk to the green point so it works for both registers. (Put on the Cashier toggle after.)"
+           local answer1 = "Ok."
+           workspace.MessageService.Dialog.Dialog:Fire(title, text, answer1, nil, true, true)
+       end,
+    })
+
+    Tab:CreateButton({
+        Name = "For Single Registers.",
+        Callback = function()
+            local title = "--Car Register--"
+            local text = "Walk to the green point so you can use cashier singels. (Put on the Cashier toggle after.)"
+            local answer1 = "Ok."
+            workspace.MessageService.Dialog.Dialog:Fire(title, text, answer1, nil, true, true)
+       end,
+    })
+
+        Tab:CreateButton({
+       Name = "For Car Register.",
+       Callback = function()
+           local title = "--Car Register--"
+           local text = "Walk to the green point so you can use cashier driveway. (Put on the Cashier toggle after.)"
+           local answer1 = "Ok."
+           workspace.MessageService.Dialog.Dialog:Fire(title, text, answer1, nil, true, true)
+       end,
+    })
+
+-- state for toggle
+local CashierEnabled = false
+local InstantCoroutine
+
+local function StartCashier()
+    if CashierEnabled then return end
+    CashierEnabled = true
+
+    -- === your script starts here ===
+
+    -- config
+    local TARGET_REGISTER = workspace:WaitForChild("Register1")
+    local TARGET_REGISTER = workspace:WaitForChild("Register2")
+    local TARGET_REGISTER = workspace:WaitForChild("Register3")
+
+    local REACH_DISTANCE = 18
+
+    local CLICK_BUBBLE_DELAY_MS = 370
+    local SELECT_RESPONSE_DELAY_MS = 100
+    local ORDER_COMPLETE_DELAY_MS = 450
+
+    local MIN_CYCLE_DELAY_MS = 270
+    local MAX_CYCLE_DELAY_MS = 320
+
+    local function waitMs(ms)
+        task.wait(ms / 1000)
+    end
+
+    local function randomCycleDelayMs()
+        return math.random(MIN_CYCLE_DELAY_MS, MAX_CYCLE_DELAY_MS)
+    end
+
+    local EventHandler
+    for _, v in pairs(getgc()) do
+        if typeof(v) == "function" then
+            local info = debug.getinfo(v)
+            if info and info.name == "GetEventHandler" then
+                print("[Cashier] Found GetEventHandler")
+                EventHandler = v
+                break
+            end
+        end
+    end
+
+    if not EventHandler then
+        warn("[Cashier] GetEventHandler not found")
+        CashierEnabled = false
+        return
+    end
+
+    local ok, Table2 = pcall(getupvalue, EventHandler, 1)
+    if not ok or type(Table2) ~= "table" then
+        warn("[Cashier] Failed to get upvalue table")
+        CashierEnabled = false
+        return
+    end
+
+    for i, v in pairs(Table2) do
+        if typeof(v) == "table" and v.Remote then
+            v.Remote.Name = i
+        end
+    end
+
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local Events = game:GetService("ReplicatedStorage"):WaitForChild("Communication"):WaitForChild("Events")
+
+    local function FindChildByIndexSequence(Parent, IndexSequence)
+        local CurrentChild = Parent
+        for _, Index in ipairs(IndexSequence) do
+            if not CurrentChild then return nil end
+            CurrentChild = CurrentChild:FindFirstChild(tostring(Index))
+        end
+        return CurrentChild
+    end
+
+    local function GetDistanceToCustomer(customerHRP)
+        local char = LocalPlayer.Character
+        if not char then return math.huge end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp or not customerHRP then return math.huge end
+        return (hrp.Position - customerHRP.Position).Magnitude
+    end
+
+    local MainClass = {}
+    MainClass.CharacterAddedConnections = {}
+
+    function MainClass:Init(HideOtherCharacters)
+        if not HideOtherCharacters then return end
+
+        for _, Player in ipairs(Players:GetPlayers()) do
+            if Player ~= LocalPlayer then
+                if Player.Character then Player.Character.Parent = nil end
+                local conn = Player.CharacterAdded:Connect(function(Character)
+                    task.wait(0.1)
+                    Character.Parent = nil
+                end)
+                self.CharacterAddedConnections[Player] = conn
+            end
+        end
+
+        Players.PlayerAdded:Connect(function(Player)
+            if Player ~= LocalPlayer then
+                local conn = Player.CharacterAdded:Connect(function(Character)
+                    task.wait(0.1)
+                    Character.Parent = nil
+                end)
+                self.CharacterAddedConnections[Player] = conn
+            end
+        end)
+
+        Players.PlayerRemoving:Connect(function(Player)
+            local conn = self.CharacterAddedConnections[Player]
+            if conn then conn:Disconnect() end
+        end)
+
+        pcall(function()
+            workspace.Main.GivePaycheck.OnClientEvent:Connect(function()
+                workspace.Main.GivePaycheck:FireServer("Paycheck", false)
+            end)
+        end)
+    end
+
+    local InstantTalk = {}
+    InstantTalk.Timeout = 8
+    InstantTalk.Registers = {TARGET_REGISTER}
+    InstantTalk.OrderConnection = workspace.GameService.RecivedCustomerOrder.OnClientEvent
+    InstantTalk.LastHandled = {}
+
+    function InstantTalk:CanTalkToCustomer(Customer)
+        local Head = Customer:FindFirstChild("Head")
+        if not Head then return false end
+
+        local bubblesGui = LocalPlayer.PlayerGui:FindFirstChild("CustomerBubbles")
+        local hasVisibleBubble = false
+        if bubblesGui then
+            for _, v in ipairs(bubblesGui:GetChildren()) do
+                if v.Adornee == Head and v.Enabled then
+                    hasVisibleBubble = true
+                    break
+                end
+            end
+        end
+
+        local HRP = Customer:FindFirstChild("HumanoidRootPart")
+        local dist = GetDistanceToCustomer(HRP)
+
+        local customerId = Customer:GetDebugId()
+        if self.LastHandled[customerId] and tick() - self.LastHandled[customerId] < 0.3 then
+            return false
+        end
+
+        return hasVisibleBubble and dist <= REACH_DISTANCE
+    end
+
+    function InstantTalk:GetRegisterForCustomer(Customer)
+        for _, Register in ipairs(self.Registers) do
+            local screen = Register:FindFirstChild("Screen")
+            if screen then
+                local hrp = Customer:FindFirstChild("HumanoidRootPart")
+                if hrp and (hrp.Position - screen.Position).Magnitude < 25 then
+                    return Register
+                end
+            end
+        end
+        return self.Registers[1]
+    end
+
+    function InstantTalk:HandleCustomer(Customer)
+        if not CashierEnabled then return false end
+
+        local correct = FindChildByIndexSequence(Customer, {"Head", "DialogSimple", "Correct"})
+        if not correct then return false end
+
+        local head = Customer.Head
+
+        workspace.Dialog:FireServer("ClickedBubble", head)
+        waitMs(CLICK_BUBBLE_DELAY_MS)
+
+        workspace.Dialog:FireServer("ResponseSelected", correct, head)
+        waitMs(SELECT_RESPONSE_DELAY_MS)
+
+        local OrderString
+        local ClientOrderConnection = self.OrderConnection:Connect(function(Order, ...)
+            OrderString = Order
+            ClientOrderConnection:Disconnect()
+        end)
+
+        local TimeTaken = 0
+        repeat
+            task.wait(0.1)
+            TimeTaken += 0.1
+            if not CashierEnabled then
+                ClientOrderConnection:Disconnect()
+                return false
+            end
+        until OrderString or TimeTaken >= self.Timeout
+
+        if OrderString and CashierEnabled then
+            waitMs(ORDER_COMPLETE_DELAY_MS)
+            local register = self:GetRegisterForCustomer(Customer)
+            Events.OrderComplete:FireServer(Customer, OrderString, register)
+            Customer:SetAttribute("AlreadyHandled", true)
+            self.LastHandled[Customer:GetDebugId()] = tick()
+            print("[InstantTalk] Order completed! Next cycle in", randomCycleDelayMs(), "ms")
+            return true
+        end
+
+        ClientOrderConnection:Disconnect()
+        return false
+    end
+
+    InstantCoroutine = coroutine.create(function()
+        while CashierEnabled do
+            local Customers = workspace.Customers:GetChildren()
+            local handled = false
+
+            for _, Customer in ipairs(Customers) do
+                if not CashierEnabled then break end
+                if InstantTalk:CanTalkToCustomer(Customer) then
+                    handled = InstantTalk:HandleCustomer(Customer)
+                    break
+                end
+            end
+
+            if not CashierEnabled then
+                break
+            end
+
+            if handled then
+                local delayMs = randomCycleDelayMs()
+                print("[Cashier] Waiting", delayMs, "ms before next cycle...")
+                waitMs(delayMs)
+            else
+                task.wait(0.05)
+            end
+        end
+        print("[Cashier] Loop stopped")
+    end)
+
+    coroutine.resume(InstantCoroutine)
+    MainClass:Init(true)
+
+    print("[Cashier] Started with MS random cycle delays!")
+    print("Cycle delay range:", MIN_CYCLE_DELAY_MS, "-", MAX_CYCLE_DELAY_MS, "milliseconds")
+    print("Button delays - Bubble:", CLICK_BUBBLE_DELAY_MS, "ms | Response:", SELECT_RESPONSE_DELAY_MS, "ms | Order:", ORDER_COMPLETE_DELAY_MS, "ms")
+
+
+    -- === your script ends here ===
+end
+
+local function StopCashier()
+    if not CashierEnabled then return end
+    CashierEnabled = false
+    -- optional: coroutine.close(InstantCoroutine) if your exploit supports it
+end
+
+local Toggle = Tab:CreateToggle({
+    Name = "Cashier",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            StartCashier()
+        else
+            StopCashier()
+        end
+    end,
 })
