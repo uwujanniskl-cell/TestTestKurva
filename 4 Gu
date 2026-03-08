@@ -129,12 +129,7 @@ task.spawn(function()
     local size = character:GetExtentsSize()
 
     -- Platform 1 (original)
-    local cframe1 = CFrame.new(
-        48.5161629, 3.80013371, 112.588791,
-        -0.999803782, 7.88716221e-08, 0.0198089201,
-        7.8796603e-08, 1, -4.56750016e-09,
-        -0.0198089201, -3.00572833e-09, -0.999803782
-    )
+    local cframe1 = CFrame.new(48.5782509, 2.86412954, 105.045181, -0.999798596, 5.152895e-09, 0.0200694259, 2.36259545e-09, 1, -1.39056056e-07, -0.0200694259, -1.38980639e-07, -0.999798596)
 
     -- Platform 2
     local cframe2 = CFrame.new(
@@ -198,6 +193,9 @@ task.spawn(function()
     end
 end)
 
+getgenv().idled = game:GetService("Players").LocalPlayer.Idled:connect(function()
+    game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+end)
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -1651,7 +1649,7 @@ local function StartCashier()
     local TARGET_REGISTER = workspace:WaitForChild("Register2")
     local TARGET_REGISTER = workspace:WaitForChild("Register3")
 
-    local REACH_DISTANCE = 18
+    local REACH_DISTANCE = 15
 
     local CLICK_BUBBLE_DELAY_MS = 370
     local SELECT_RESPONSE_DELAY_MS = 100
