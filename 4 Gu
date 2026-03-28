@@ -537,7 +537,7 @@ local Whitelist = {
 	"DEATH_N1CK",
 	"991awesomegirl",
 	"hello502351",
-	"ArtemisFowl11uf"
+    "ArtemisFowl11uf"
 }
 
 local function isWhitelisted(name)
@@ -1644,14 +1644,10 @@ local function StartCashier()
     if CashierEnabled then return end
     CashierEnabled = true
 
-    -- === your script starts here ===
-
-    -- config
-    local TARGET_REGISTER = workspace:WaitForChild("Register1")
-    local TARGET_REGISTER = workspace:WaitForChild("Register2")
+    -- config (FIXED: only one register or make a table if needed)
     local TARGET_REGISTER = workspace:WaitForChild("Register3")
 
-    local REACH_DISTANCE = 15
+    local REACH_DISTANCE = 18
 
     local CLICK_BUBBLE_DELAY_MS = 370
     local SELECT_RESPONSE_DELAY_MS = 100
@@ -1668,12 +1664,12 @@ local function StartCashier()
         return math.random(MIN_CYCLE_DELAY_MS, MAX_CYCLE_DELAY_MS)
     end
 
+    -- keep this part if needed for your game
     local EventHandler
     for _, v in pairs(getgc()) do
         if typeof(v) == "function" then
             local info = debug.getinfo(v)
             if info and info.name == "GetEventHandler" then
-                print("[Cashier] Found GetEventHandler")
                 EventHandler = v
                 break
             end
@@ -1687,15 +1683,11 @@ local function StartCashier()
     end
 
     local ok, Table2 = pcall(getupvalue, EventHandler, 1)
-    if not ok or type(Table2) ~= "table" then
-        warn("[Cashier] Failed to get upvalue table")
-        CashierEnabled = false
-        return
-    end
-
-    for i, v in pairs(Table2) do
-        if typeof(v) == "table" and v.Remote then
-            v.Remote.Name = i
+    if ok and type(Table2) == "table" then
+        for i, v in pairs(Table2) do
+            if typeof(v) == "table" and v.Remote then
+                v.Remote.Name = i
+            end
         end
     end
 
@@ -1720,38 +1712,11 @@ local function StartCashier()
         return (hrp.Position - customerHRP.Position).Magnitude
     end
 
+    -- ✅ FIXED: removed hide/delete players system
     local MainClass = {}
-    MainClass.CharacterAddedConnections = {}
 
-    function MainClass:Init(HideOtherCharacters)
-        if not HideOtherCharacters then return end
-
-        for _, Player in ipairs(Players:GetPlayers()) do
-            if Player ~= LocalPlayer then
-                if Player.Character then Player.Character.Parent = nil end
-                local conn = Player.CharacterAdded:Connect(function(Character)
-                    task.wait(0.1)
-                    Character.Parent = nil
-                end)
-                self.CharacterAddedConnections[Player] = conn
-            end
-        end
-
-        Players.PlayerAdded:Connect(function(Player)
-            if Player ~= LocalPlayer then
-                local conn = Player.CharacterAdded:Connect(function(Character)
-                    task.wait(0.1)
-                    Character.Parent = nil
-                end)
-                self.CharacterAddedConnections[Player] = conn
-            end
-        end)
-
-        Players.PlayerRemoving:Connect(function(Player)
-            local conn = self.CharacterAddedConnections[Player]
-            if conn then conn:Disconnect() end
-        end)
-
+    function MainClass:Init()
+        -- only keep paycheck auto-claim
         pcall(function()
             workspace.Main.GivePaycheck.OnClientEvent:Connect(function()
                 workspace.Main.GivePaycheck:FireServer("Paycheck", false)
@@ -1819,7 +1784,9 @@ local function StartCashier()
         waitMs(SELECT_RESPONSE_DELAY_MS)
 
         local OrderString
-        local ClientOrderConnection = self.OrderConnection:Connect(function(Order, ...)
+        local ClientOrderConnection
+
+        ClientOrderConnection = self.OrderConnection:Connect(function(Order)
             OrderString = Order
             ClientOrderConnection:Disconnect()
         end)
@@ -1840,11 +1807,13 @@ local function StartCashier()
             Events.OrderComplete:FireServer(Customer, OrderString, register)
             Customer:SetAttribute("AlreadyHandled", true)
             self.LastHandled[Customer:GetDebugId()] = tick()
-            print("[InstantTalk] Order completed! Next cycle in", randomCycleDelayMs(), "ms")
             return true
         end
 
-        ClientOrderConnection:Disconnect()
+        if ClientOrderConnection then
+            ClientOrderConnection:Disconnect()
+        end
+
         return false
     end
 
@@ -1861,14 +1830,10 @@ local function StartCashier()
                 end
             end
 
-            if not CashierEnabled then
-                break
-            end
+            if not CashierEnabled then break end
 
             if handled then
-                local delayMs = randomCycleDelayMs()
-                print("[Cashier] Waiting", delayMs, "ms before next cycle...")
-                waitMs(delayMs)
+                waitMs(randomCycleDelayMs())
             else
                 task.wait(0.05)
             end
@@ -1877,20 +1842,14 @@ local function StartCashier()
     end)
 
     coroutine.resume(InstantCoroutine)
-    MainClass:Init(true)
+    MainClass:Init() -- ✅ no more true/false needed
 
-    print("[Cashier] Started with MS random cycle delays!")
-    print("Cycle delay range:", MIN_CYCLE_DELAY_MS, "-", MAX_CYCLE_DELAY_MS, "milliseconds")
-    print("Button delays - Bubble:", CLICK_BUBBLE_DELAY_MS, "ms | Response:", SELECT_RESPONSE_DELAY_MS, "ms | Order:", ORDER_COMPLETE_DELAY_MS, "ms")
-
-
-    -- === your script ends here ===
+    print("[Cashier FIXED] Running without deleting players ✅")
 end
 
 local function StopCashier()
     if not CashierEnabled then return end
     CashierEnabled = false
-    -- optional: coroutine.close(InstantCoroutine) if your exploit supports it
 end
 
 local Toggle = Tab:CreateToggle({
