@@ -115,7 +115,30 @@ task.spawn(function()
         or (http and http.request)
 
     if type(requestFn) ~= "function" then
-        error("No HTTP request function is available in this client.")
+        warn("No HTTP request function is available in this client.")
+        return
+    end
+
+    if WEBHOOK_URL == "PASTE_YOUR_NEW_LEADERBOARD_WEBHOOK_URL_HERE" then
+        warn("Set WEBHOOK_URL in the leaderboard block to your new Discord webhook URL.")
+        return
+    end
+
+    -- matches your username or display name
+    local function isMe(text)
+        text = tostring(text or ""):lower()
+        return text == player.Name:lower() or text == player.DisplayName:lower()
+    end
+
+    -- 1234567 -> 1.234.567
+    local function formatDots(n)
+        local s = string.format("%.0f", n)
+        local sign, digits = s:match("^(-?)(%d+)$")
+        digits = digits:reverse():gsub("(%d%d%d)", "%1."):reverse()
+        if digits:sub(1, 1) == "." then
+            digits = digits:sub(2)
+        end
+        return sign .. digits
     end
 
     local function getLeaderboardResult()
@@ -130,102 +153,93 @@ task.spawn(function()
         for _, row in ipairs(scrolling:GetChildren()) do
             local nameLabel = row:FindFirstChild("PlayerName", true)
 
-            if nameLabel
-                and nameLabel:IsA("TextLabel")
-                and nameLabel.Text:lower() == player.Name:lower()
-            then
+            if nameLabel and nameLabel:IsA("TextLabel") and isMe(nameLabel.Text) then
                 local rankLabel = row:FindFirstChild("Rank", true)
                 local statLabel = row:FindFirstChild("Stat", true)
 
-                if not rankLabel or not rankLabel:IsA("TextLabel")
-                    or not statLabel or not statLabel:IsA("TextLabel")
-                then
-                    return nil, "Your leaderboard row is missing its rank or order label."
+                if not (rankLabel and rankLabel:IsA("TextLabel") and statLabel and statLabel:IsA("TextLabel")) then
+                    return nil, "Leaderboard row is missing its rank or order label."
                 end
 
-                return {
-                    rank = rankLabel.Text,
-                    orders = statLabel.Text,
-                }
+                return { rank = rankLabel.Text, orders = statLabel.Text }
             end
         end
 
-        return {
-            rank = "-",
-            orders = "-",
-        }
+        return { rank = "-", orders = "-" }
     end
 
     local function getMoneyResult()
         local balance = player:FindFirstChild("Moneyz")
+            or player:FindFirstChild("Moneyz", true)
 
-        if not balance
-            or not (balance:IsA("IntValue") or balance:IsA("NumberValue"))
-        then
-            return nil, "Your Moneyz balance value is unavailable."
+        local current = "unavailable"
+        if balance and (balance:IsA("IntValue") or balance:IsA("NumberValue")) then
+            current = formatDots(balance.Value)
         end
 
+        local listText = "unavailable"
+        local reason
         local playerGui = player:FindFirstChildOfClass("PlayerGui")
         local mainGui = playerGui and playerGui:FindFirstChild("MainGui")
-        local menu = mainGui and mainGui:FindFirstChild("Menu")
-        local playerList = menu and menu:FindFirstChild("PlayerList")
+        local playerList = mainGui and mainGui:FindFirstChild("PlayerList", true)
 
         if not playerList then
-            return nil, "The player list is unavailable."
-        end
+            reason = "Player list not found."
+        else
+            for _, row in ipairs(playerList:GetChildren()) do
+                local nameLabel = row:FindFirstChild("PlayerName", true)
 
-        for _, row in ipairs(playerList:GetChildren()) do
-            local nameLabel = row:FindFirstChild("PlayerName", true)
-
-            if nameLabel
-                and nameLabel:IsA("TextLabel")
-                and nameLabel.Text:lower() == player.Name:lower()
-            then
-                local moneyLabel = row:FindFirstChild("Moneyz", true)
-
-                if not moneyLabel or not moneyLabel:IsA("TextLabel") then
-                    return nil, "Your player-list row is missing its Moneyz label."
+                if nameLabel and nameLabel:IsA("TextLabel") and isMe(nameLabel.Text) then
+                    local moneyLabel = row:FindFirstChild("Moneyz", true)
+                    if moneyLabel and moneyLabel:IsA("TextLabel") then
+                        listText = moneyLabel.Text
+                    else
+                        reason = "Moneyz label missing in your player-list row."
+                    end
+                    break
                 end
-
-                return {
-                    current = tostring(balance.Value),
-                    playerList = moneyLabel.Text,
-                }
+            end
+            if listText == "unavailable" and not reason then
+                reason = "Your row was not found on the player list."
             end
         end
 
-        return nil, "Your row was not found on the player list."
+        if current == "unavailable" and reason then
+            return nil, "Moneyz value not found. " .. reason
+        end
+
+        return { current = current, playerList = listText, note = reason }
     end
 
-    local function sendWebhook(leaderboard, money)
-        local payload = {
-            username = BOT_NAME,
-            embeds = {
-                {
-                    title = "Player Data",
-                    color = COLOR_MAIN,
-                    fields = {
-                        { name = "Player", value = player.Name, inline = true },
-                        { name = "Leaderboard Rank", value = leaderboard.rank, inline = true },
-                        { name = "Orders", value = leaderboard.orders, inline = true },
-                        { name = "Current Moneyz", value = money.current, inline = true },
-                        { name = "Player List Moneyz", value = money.playerList, inline = true },
-                    },
-                    footer = { text = FOOTER_TEXT },
-                    timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
-                },
-            },
-            allowed_mentions = { parse = {} },
+    local function sendWebhook(leaderboard, money, errors)
+        local fields = {
+            { name = "Player", value = player.Name, inline = true },
+            { name = "Leaderboard Rank", value = leaderboard and leaderboard.rank or "unavailable", inline = true },
+            { name = "Orders", value = leaderboard and leaderboard.orders or "unavailable", inline = true },
+            { name = "Current Moneyz", value = money and money.current or "unavailable", inline = true },
+            { name = "Player List Moneyz", value = money and money.playerList or "unavailable", inline = true },
         }
+
+        if #errors > 0 then
+            table.insert(fields, { name = "Notes", value = table.concat(errors, "\n"), inline = false })
+        end
 
         local ok, response = pcall(function()
             return requestFn({
                 Url = WEBHOOK_URL,
                 Method = "POST",
-                Headers = {
-                    ["Content-Type"] = "application/json",
-                },
-                Body = HttpService:JSONEncode(payload),
+                Headers = { ["Content-Type"] = "application/json" },
+                Body = HttpService:JSONEncode({
+                    username = BOT_NAME,
+                    embeds = {{
+                        title = "Player Data",
+                        color = COLOR_MAIN,
+                        fields = fields,
+                        footer = { text = FOOTER_TEXT },
+                        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+                    }},
+                    allowed_mentions = { parse = {} },
+                }),
             })
         end)
 
@@ -234,31 +248,25 @@ task.spawn(function()
             return
         end
 
-        if not response then
-            warn("Webhook request returned no response.")
-            return
-        end
-
-        local statusCode = response.StatusCode
-        if response.Success == false
-            or (type(statusCode) == "number" and (statusCode < 200 or statusCode >= 300))
-        then
-            warn("Webhook returned an unsuccessful response: " .. tostring(statusCode))
+        local status = response and (response.StatusCode or response.Status)
+        if not response or response.Success == false
+            or (type(status) == "number" and (status < 200 or status >= 300)) then
+            warn("Webhook returned: " .. tostring(status) .. " " .. tostring(response and response.Body))
+        else
+            print("Moneyz webhook sent.")
         end
     end
 
     while true do
-        local leaderboard, leaderboardError = getLeaderboardResult()
-        local money, moneyError = getMoneyResult()
+        local errors = {}
+        local leaderboard, lbErr = getLeaderboardResult()
+        local money, moneyErr = getMoneyResult()
 
-        if not leaderboard then
-            warn(leaderboardError)
-        elseif not money then
-            warn(moneyError)
-        else
-            sendWebhook(leaderboard, money)
-        end
+        if lbErr then table.insert(errors, lbErr) warn(lbErr) end
+        if moneyErr then table.insert(errors, moneyErr) warn(moneyErr) end
+        if money and money.note then table.insert(errors, money.note) end
 
+        sendWebhook(leaderboard, money, errors)
         task.wait(INTERVAL_SECONDS)
     end
 end)
