@@ -2,6 +2,7 @@
     Drool Hub (Private) - running on Modern GUI v2 (Luau)
     All features of the old Drool Hub, ported to the new library.
     NEW: click your name/avatar in the sidebar to open the Player Info tab.
+    NEW: "Extra Stuff" tab with a themed Camera Bar (Cashier/Cook/Boxer/Delivery/Supplier cams).
 ]]
 
 task.spawn(function()
@@ -312,14 +313,15 @@ local GUI_NAME = "ModernGui"
 local CONFIG_FOLDER = "ModernGui"
 
 local Icons = {
-    Logo     = "✦",
-    Home     = "🏠",
-    Visuals  = "👁",
-    Settings = "⚙",
-    Farm     = "🌧️",
-    Extra    = "⭐",
-    Teleport = "🌎",
-    Misc     = "💎",
+    Logo       = "✦",
+    Home       = "🏠",
+    Visuals    = "👁",
+    Settings   = "⚙",
+    Farm       = "🌧️",
+    Extra      = "⭐",
+    Teleport   = "🌎",
+    Misc       = "💎",
+    ExtraStuff = "🔮",
 }
 
 local Theme = {
@@ -2333,7 +2335,7 @@ do
     local CashierRunning = false
     local CashierWorkerRunning = false
     local hiddenFloors = {}
-    local cashierPosition = Vector3.new(48.7329979, 6.00011444, 88.8772278, 0.999997616, -3.50909275e-08, 0.00218225247, 3.52477656e-08, 1, -7.18306907e-08, -0.00218225247, 7.19074364e-08, 0.999997616)
+    local cashierPosition = Vector3.new(23.84, 6.59, 147.69)
 
     for _, instance in ipairs(workspace:GetDescendants()) do
         if instance:IsA("BasePart")
@@ -4391,6 +4393,171 @@ Tab:AddButton({
         end
     end
 })
+
+------------------------------------------------------------------
+-- Tab: Extra Stuff (NEW)
+-- Themed camera bar: shown at the top left, follows theme + glow.
+-- It is parented into the same ScreenGui as the main window, so
+-- Library:SetTheme / Library:SetGlow recolor it automatically.
+------------------------------------------------------------------
+local Tab = Window:AddTab("Extra Stuff", Icons.ExtraStuff)
+
+Tab:AddSection("Cameras")
+
+do
+    local RunService = game:GetService("RunService")
+
+    local Cams = {
+        { "Cashier",  CFrame.new(19.6659737, 15.4581728, 75.4434204, -0.712210298, 0.237045303, -0.660731494, 0, 0.941258311, 0.337687641, 0.701966166, 0.240504622, -0.670373857) },
+        { "Cook",     CFrame.new(51.945343, 9.33025074, 74.955368, 0.796477139, -0.113506503, 0.593919516, 0, 0.982223094, 0.187716872, -0.604668617, -0.149512202, 0.782318294) },
+        { "Boxer",    CFrame.new(49.6263313, 16.3875809, 8.46228981, -0.531325817, 0.412792891, -0.739793897, 0, 0.87325573, 0.487262368, 0.847167611, 0.258895069, -0.463983268) },
+        { "Delivery", CFrame.new(50.1129494, 16.4247894, -4.44517803, 0.801617742, 0.435209751, -0.409879714, 0, 0.685604572, 0.727974117, 0.597836852, -0.58355695, 0.549592853) },
+        { "Supplier", CFrame.new(48.4159164, 26.3796062, -1003.70923, 0.493078381, -0.268559217, 0.827496052, 0, 0.951161385, 0.308694154, -0.869984806, -0.152210414, 0.46899718) },
+    }
+
+    local bar
+    local buttons = {}
+    local activeCam, camConn = nil, nil
+
+    local function refreshButtons()
+        pcall(function()
+            for name, b in pairs(buttons) do
+                tween(b, { BackgroundColor3 = (name == activeCam) and Theme.Accent or Theme.Element }, 0.15)
+            end
+        end)
+    end
+
+    local function stopCam()
+        activeCam = nil
+        if camConn then camConn:Disconnect() camConn = nil end
+        local cam = workspace.CurrentCamera
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if cam then
+            cam.CameraType = Enum.CameraType.Custom
+            if hum then cam.CameraSubject = hum end
+        end
+        refreshButtons()
+    end
+
+    local function startCam(name, cf)
+        if camConn then camConn:Disconnect() camConn = nil end
+        activeCam = name
+        -- load the area around the camera (matters for far spots like Supplier)
+        task.spawn(function()
+            pcall(function() LocalPlayer:RequestStreamAroundAsync(cf.Position) end)
+        end)
+        camConn = RunService.RenderStepped:Connect(function()
+            local cam = workspace.CurrentCamera
+            if not cam then return end
+            cam.CameraType = Enum.CameraType.Scriptable
+            cam.CFrame = cf
+        end)
+        refreshButtons()
+    end
+
+    local function buildBar()
+        local BTN_W, BTN_GAP, START_X = 64, 4, 52
+        local count = #Cams + 1 -- + Reset button
+        local width = START_X + count * (BTN_W + BTN_GAP) + 4
+
+        bar = create("Frame", {
+            Name = "CamBar",
+            Size = UDim2.fromOffset(width, 40),
+            Position = UDim2.fromOffset(160, 10), -- top left, right of Roblox's own buttons
+            BackgroundColor3 = Theme.Sidebar,
+            BorderSizePixel = 0,
+            Parent = Library._gui,
+        }, { corner(10), stroke(Theme.Stroke, 1) })
+        neon(bar, 1.5, 0.55, true)
+
+        -- title doubles as the drag handle
+        local handle = create("TextLabel", {
+            Size = UDim2.fromOffset(46, 40),
+            Position = UDim2.fromOffset(4, 0),
+            BackgroundTransparency = 1,
+            Text = "CAMS",
+            TextColor3 = Theme.Accent,
+            Font = Enum.Font.GothamBold,
+            TextSize = 12,
+            Parent = bar,
+        })
+
+        local function addButton(i, text, callback)
+            local b = create("TextButton", {
+                Size = UDim2.fromOffset(BTN_W, 28),
+                Position = UDim2.fromOffset(START_X + (i - 1) * (BTN_W + BTN_GAP), 6),
+                BackgroundColor3 = Theme.Element,
+                Text = text,
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.GothamMedium,
+                TextSize = 11,
+                AutoButtonColor = false,
+                Parent = bar,
+            }, { corner(7) })
+            b.MouseEnter:Connect(function()
+                if activeCam ~= text then tween(b, { BackgroundColor3 = Theme.ElementHi }, 0.1) end
+            end)
+            b.MouseLeave:Connect(function()
+                if activeCam ~= text then tween(b, { BackgroundColor3 = Theme.Element }, 0.1) end
+            end)
+            b.MouseButton1Click:Connect(callback)
+            return b
+        end
+
+        for i, cam in ipairs(Cams) do
+            local name, cf = cam[1], cam[2]
+            buttons[name] = addButton(i, name, function()
+                if activeCam == name then
+                    stopCam() -- clicking the active cam again goes back to normal
+                else
+                    startCam(name, cf)
+                end
+            end)
+        end
+        addButton(#Cams + 1, "Reset", stopCam)
+
+        -- drag
+        local dragging, dragStart, startPos
+        handle.InputBegan:Connect(function(input)
+            if isPointerDown(input) then
+                dragging = true
+                dragStart = input.Position
+                startPos = bar.Position
+            end
+        end)
+        connect(UserInputService.InputChanged, function(input)
+            if dragging and isPointerMove(input) then
+                local d = input.Position - dragStart
+                bar.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+            end
+        end)
+        connect(UserInputService.InputEnded, function(input)
+            if isPointerDown(input) then dragging = false end
+        end)
+
+        -- if the whole UI gets unloaded, give the camera back
+        bar.Destroying:Connect(function() pcall(stopCam) end)
+    end
+
+    Tab:AddToggle({
+        Name = "Camera Bar",
+        Description = "Small bar at the top left to view the job cameras",
+        Default = false,
+        Flag = "cameraBar",
+        Callback = function(Value)
+            if Value then
+                if not bar or not bar.Parent then buildBar() end
+                bar.Visible = true
+            else
+                if bar then
+                    stopCam()
+                    bar.Visible = false
+                end
+            end
+        end
+    })
+end
 
 ------------------------------------------------------------------
 -- Settings (theme, glow, UI scale, configs, unload)
