@@ -2333,7 +2333,7 @@ do
     local CashierRunning = false
     local CashierWorkerRunning = false
     local hiddenFloors = {}
-    local cashierPosition = Vector3.new(23.84, 6.59, 147.69)
+    local cashierPosition = Vector3.new(48.7329979, 6.00011444, 88.8772278, 0.999997616, -3.50909275e-08, 0.00218225247, 3.52477656e-08, 1, -7.18306907e-08, -0.00218225247, 7.19074364e-08, 0.999997616)
 
     for _, instance in ipairs(workspace:GetDescendants()) do
         if instance:IsA("BasePart")
