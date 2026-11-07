@@ -2438,16 +2438,40 @@ Tab:AddSection("Cook Stuff")
 
 do
     local cookEnabled = false
+    local cookSession = 0
 
+    -- single safe entry point for every oven door click
+    local lastClick = {}
+    local function clickOven(oven, wantOpen)
+        local door = oven:FindFirstChild("Door")
+        local cd = door and door:FindFirstChild("ClickDetector")
+        local detector = cd and cd:FindFirstChild("Detector")
+        local meter = door and door:FindFirstChild("Meter")
+        if not detector then return false end
+
+        if oven.IsOpen.Value == wantOpen then return false end
+        if tick() - (lastClick[oven] or 0) < 1.5 then return false end
+        if meter and meter.RotVelocity.Magnitude > 0.01 then return false end
+
+        lastClick[oven] = tick()
+        detector:FireServer()
+        return true
+    end
 
     Tab:AddToggle({
         Name = "Cook",
         Default = false,
         Callback = function(Value)
+            cookSession += 1
             cookEnabled = Value
 
             if not Value then
                 return
+            end
+
+            local session = cookSession
+            local function alive()
+                return cookEnabled and cookSession == session
             end
 
             task.spawn(function()
@@ -2770,12 +2794,8 @@ do
                                     oven.Bottom.CFrame + Vector3.new(0, 0.7, 0)
                                 )
 
-                                local door = oven:FindFirstChild("Door")
-                                local clickDetector = door and door:FindFirstChild("ClickDetector")
-                                local detector = clickDetector and clickDetector:FindFirstChild("Detector")
-                                if detector then
-                                    detector:FireServer()
-                                end
+                                task.wait(0.15)
+                                clickOven(oven, false) -- close the door (safe click)
 
                                 cookingDict[order] = cookingDict[order] + 1
                                 local revoked = false
@@ -2798,6 +2818,7 @@ do
                         end
                     end
 
+                    -- reopen ovens that are closed but idle / wrong color
                     for _, oven in ipairs(ovens) do
                         local door = oven:FindFirstChild("Door")
                         local meter = door and door:FindFirstChild("Meter")
@@ -2814,18 +2835,16 @@ do
                             ).Magnitude > 0.1
 
                             if isNotCooking or colorIsWrong then
-                                didSomething = true
                                 teleportToKitchen()
-                                local clickDetector = door:FindFirstChild("ClickDetector")
-                                local detector = clickDetector and clickDetector:FindFirstChild("Detector")
-                                if detector then
-                                    detector:FireServer()
+                                if clickOven(oven, true) then
+                                    didSomething = true
+                                    break
                                 end
-                                break
                             end
                         end
                     end
 
+                    -- dough sitting in an oven that isn't cooking: close the door (only if it is open)
                     task.spawn(function()
                         for _, dough in ipairs(workspace.AllDough:GetChildren()) do
                             for _, oven in ipairs(workspace.Ovens:GetChildren()) do
@@ -2834,12 +2853,7 @@ do
                                     and (dough.Position - bottom.Position).Magnitude <= 3
                                     and not oven.IsCooking.Value
                                     and dough.BrickColor.Name ~= "Bright orange" then
-                                    local door = oven:FindFirstChild("Door")
-                                    local clickDetector = door and door:FindFirstChild("ClickDetector")
-                                    local detector = clickDetector and clickDetector:FindFirstChild("Detector")
-                                    if detector then
-                                        detector:FireServer()
-                                    end
+                                    clickOven(oven, false)
                                 end
                             end
                         end
@@ -2892,13 +2906,18 @@ do
 
                 player.PlayerScripts.LocalMain.Disabled = false
 
-                while cookEnabled do
+                while alive() do
                     for _ = 1, 18 do
-                        if not cookEnabled then
+                        if not alive() then
                             break
                         end
 
-                        if not cookStep() then
+                        local ok, did = pcall(cookStep)
+                        if not ok then
+                            warn("cookStep error:", did)
+                            break
+                        end
+                        if not did then
                             break
                         end
 
@@ -3904,9 +3923,56 @@ Tab:AddSection("Presents")
 do
     local running = false
 
-    local function sellAllWrappedItems()
+    -- welche Rarities VERKAUFT werden (geöffnet werden immer alle Presents)
+    local SellRarity = {
+        Normal = true,
+        Common = true,
+        Uncommon = false,
+        Rare = false,
+        Legendary = false,
+    }
+
+    -- falls Rarity eine Zahl ist (Reihenfolge ggf. anpassen)
+    local RarityByNumber = {
+        [1] = "Normal",
+        [2] = "Common",
+        [3] = "Uncommon",
+        [4] = "Rare",
+        [5] = "Legendary",
+    }
+
+    local warnedUnknown = {}
+
+    local function shouldSell(tool)
+        local rarity = tool:FindFirstChild("Rarity")
+        if not rarity then return true end
+
+        local value = rarity.Value
+        local name = tostring(value)
+
+        if type(value) == "number" then
+            name = RarityByNumber[value] or name
+        end
+
+        name = name:gsub("%s+", ""):lower()
+        for key, enabled in pairs(SellRarity) do
+            if key:lower() == name then
+                return enabled
+            end
+        end
+
+        -- unbekannte Rarity: verkaufen wie früher, einmal in der Konsole melden
+        if not warnedUnknown[name] then
+            warnedUnknown[name] = true
+            print("[Presents] unbekannte Rarity:", tostring(value))
+        end
+        return true
+    end
+
+    local function processAllPresents()
         local backpack = LocalPlayer:WaitForChild("Backpack")
         local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local channel = ReplicatedStorage:WaitForChild("PlayerChannel")
 
         for _, v in pairs(backpack:GetChildren()) do
             if v.Name == "Normal" and v:FindFirstChild("Rarity") then
@@ -3915,9 +3981,14 @@ do
                 end
                 local id = v:FindFirstChild("RewardAssetId") and v.RewardAssetId.Value
                 if id then
+                    local sell = shouldSell(v)
                     v.Parent = character
-                    ReplicatedStorage:WaitForChild("PlayerChannel"):FireServer("PutUnwrappedItemInInventory", id)
-                    ReplicatedStorage:WaitForChild("PlayerChannel"):FireServer("SellInventoryItem", id)
+                    -- immer öffnen
+                    channel:FireServer("PutUnwrappedItemInInventory", id)
+                    -- nur verkaufen, wenn die Rarity angehakt ist
+                    if sell then
+                        channel:FireServer("SellInventoryItem", id)
+                    end
                     v:Destroy()
                 end
             end
@@ -3927,14 +3998,14 @@ do
     local function autoSellLoop()
         while running do
             local backpack = LocalPlayer:WaitForChild("Backpack")
-            local normalCount = 0
+            local count = 0
             for _, item in pairs(backpack:GetChildren()) do
                 if item.Name == "Normal" then
-                    normalCount = normalCount + 1
+                    count = count + 1
                 end
             end
-            if normalCount > 5 then
-                sellAllWrappedItems()
+            if count > 5 then
+                processAllPresents()
             end
             task.wait(1)
         end
@@ -3964,6 +4035,12 @@ do
             end
         end
     })
+
+    Tab:AddToggle({ Name = "Sell Normal",    Default = true,  Callback = function(t) SellRarity.Normal = t end })
+    Tab:AddToggle({ Name = "Sell Common",    Default = true,  Callback = function(t) SellRarity.Common = t end })
+    Tab:AddToggle({ Name = "Sell Uncommon",  Default = false, Callback = function(t) SellRarity.Uncommon = t end })
+    Tab:AddToggle({ Name = "Sell Rare",      Default = false, Callback = function(t) SellRarity.Rare = t end })
+    Tab:AddToggle({ Name = "Sell Legendary", Default = false, Callback = function(t) SellRarity.Legendary = t end })
 end
 
 Tab:AddSection("Keep Jobs")
